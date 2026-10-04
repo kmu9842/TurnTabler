@@ -1,0 +1,53 @@
+.ytp-contextmenu.turntabler-youtube-menu,
+.ytp-contextmenu.turntabler-youtube-menu .ytp-popup-content,
+.ytp-contextmenu.turntabler-youtube-menu .ytp-panel,
+.ytp-contextmenu.turntabler-youtube-menu .ytp-panel-menu {
+  height: auto !important;
+}
+.ytp-contextmenu.turntabler-youtube-menu .ytp-popup-content,
+.ytp-contextmenu.turntabler-youtube-menu .ytp-panel {
+  position: static !important;
+}
+.ytp-contextmenu.turntabler-youtube-menu {
+  width: max-content !important;
+  min-width: 250px;
+  max-width: calc(100vw - 16px);
+  z-index: 2147483646 !important;
+}
+.ytp-contextmenu.turntabler-youtube-menu .ytp-popup-content,
+.ytp-contextmenu.turntabler-youtube-menu .ytp-panel,
+.ytp-contextmenu.turntabler-youtube-menu .ytp-panel-menu {
+  width: auto !important;
+}
+.ytp-contextmenu.turntabler-youtube-menu .ytp-popup-content {
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}
+.ytp-contextmenu .turntabler-youtube-item .ytp-menuitem-icon img {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+.ytp-contextmenu .turntabler-youtube-item:focus-visible {
+  outline: 2px solid #b7d6ff;
+  outline-offset: -2px;
+}
+#turntabler-playback-notice {
+  position: fixed;
+  z-index: 2147483647;
+  right: 20px;
+  bottom: 24px;
+  max-width: min(400px, calc(100vw - 64px));
+  padding: 14px 18px;
+  border: 1px solid #53667b;
+  border-radius: 10px;
+  background: #18212ef5;
+  box-shadow: 0 4px 24px #0005;
+  color: #eff6ff;
+  font: 14px/1.6 "Segoe UI", "Malgun Gothic", sans-serif;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+#turntabler-playback-notice[data-error="true"] { color: #ffc1b5; }

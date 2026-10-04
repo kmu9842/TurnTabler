@@ -1,0 +1,18 @@
+:root { color-scheme: dark; font: 13px/1.6 "Segoe UI", "Malgun Gothic", sans-serif; color: #e9edf7; background: #141a24; }
+body { width: 310px; margin: 0; padding: 20px; }
+header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+h1 { font-size: 19px; line-height: 1.2; margin: 0; }
+header p { color: #a7b7ce; margin: 3px 0 0; font-size: 12px; }
+p { margin: 12px 0; }
+.hint { color: #a7b7ce; font-size: 12px; }
+#status { padding: 12px; border-radius: 8px; background: #202b3b; margin: 16px 0 10px; overflow-wrap: anywhere; }
+#status[data-ok="false"] { color: #ffbcaf; }
+#status[data-ok="true"] { color: #a0e3c0; }
+button { width: 100%; padding: 10px; font: inherit; color: #fff; background: #305b96; border: 1px solid #527aaa; border-radius: 8px; cursor: pointer; }
+button:disabled { opacity: .6; cursor: wait; }
+#settings { margin-top: 8px; background: transparent; }
+button:focus-visible, summary:focus-visible { outline: 2px solid #b7d6ff; outline-offset: 3px; }
+details { margin-top: 16px; font-size: 12px; color: #b4c2d7; }
+summary { cursor: pointer; }
+ol { padding-left: 20px; }
+li { margin: 7px 0; }

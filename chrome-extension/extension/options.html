@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ko">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>TurnTabler 설정</title><link rel="stylesheet" href="popup.css"><link rel="stylesheet" href="options.css"></head>
+<body>
+  <header><img src="icons/48.png" width="40" height="40" alt=""><div><h1>TurnTabler 설정</h1><p>재생할 앱의 위치를 지정하세요.</p></div></header>
+  <p>TurnTabler 2.1.2 이상을 지원합니다. EXE를 옮기거나 업데이트했다면 여기서 경로를 다시 지정하세요.</p>
+  <form id="path-form">
+    <label for="app-path">TurnTabler.exe 경로</label>
+    <input id="app-path" type="text" spellcheck="false" autocomplete="off" placeholder="E:\project\TurnTabler\release\v2.1.4\TurnTabler.exe" required>
+    <div class="buttons"><button id="browse" type="button">파일 선택…</button><button id="save" type="submit">경로 저장</button></div>
+  </form>
+  <div id="status" role="status" aria-live="polite">설정을 불러오는 중…</div>
+  <p id="version" class="hint"></p>
+  <button id="check" type="button">연결 다시 확인</button>
+  <p class="hint">연결 프로그램이 설치되지 않았다면 별도 ZIP의 Install.cmd를 먼저 실행하세요. 경로를 저장해도 앱이 바로 실행되지는 않습니다.</p>
+  <script src="options.mjs" type="module"></script>
+</body></html>

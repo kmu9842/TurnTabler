@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "TurnTabler로 재생",
+  "version": "1.2.0",
+  "description": "유튜브에서 우클릭해 TurnTabler로 재생합니다. 앱이 꺼져 있으면 함께 실행합니다.",
+  "minimum_chrome_version": "123",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1sCiKqgV1/f2v1VsKfiUPmn/YGvxy8MRNpkjjhTkWT9tJMIC84QhkABKvZZep3uva3ARghEkwKdyn79oYUJaGa8sC7SZ5/p7Sg7iK96AkPG4lSAphv4uQh4QgmaIz0bWZraSGCyw/nOiWS8E6+gD4pFYOLCnHNjohlOnfZTaM2yNKTcno+zw3xM0bk5IucKXC8Sz1BIWz3XKEsRXImnxsXIlyj2ENQk2C+68RTlpjCjHCkfexLvRBlhw29IxQ8qf/DinWii8P+h0DXRiGdZkg8FY82o3aDVedul2tUQoehKOrI6oTRmSIgEJU4rRU8gWO9xX+iPZHC+q2cJLf1bv3wIDAQAB",
+  "permissions": ["contextMenus", "nativeMessaging", "notifications", "storage"],
+  "background": { "service_worker": "background.mjs", "type": "module" },
+  "options_ui": { "page": "options.html", "open_in_tab": true },
+  "content_scripts": [{
+    "matches": ["https://www.youtube.com/*", "https://youtube.com/*", "https://m.youtube.com/*", "https://music.youtube.com/*"],
+    "js": ["youtube-menu.js"],
+    "css": ["youtube-menu.css"],
+    "run_at": "document_idle",
+    "all_frames": true
+  }],
+  "web_accessible_resources": [{
+    "resources": ["icons/32.png"],
+    "matches": ["https://www.youtube.com/*", "https://youtube.com/*", "https://m.youtube.com/*", "https://music.youtube.com/*"]
+  }],
+  "action": {
+    "default_title": "TurnTabler로 재생",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" }
+  },
+  "icons": { "16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png" }
+}

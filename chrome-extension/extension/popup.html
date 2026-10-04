@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TurnTabler</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header><img src="icons/48.png" width="40" height="40" alt=""><div><h1>TurnTabler</h1><p>유튜브를 내 턴테이블로</p></div></header>
+  <p>영상·썸네일·재생목록을 우클릭한 뒤 <strong>TurnTabler로 재생</strong>을 선택하세요. 앱이 꺼져 있으면 함께 실행됩니다.</p>
+  <p class="hint">영상 위에서 한 번 우클릭하면 유튜브 메뉴 맨 위에 표시됩니다. 썸네일에서는 Chrome 메뉴를 사용합니다.</p>
+  <div id="status" role="status" aria-live="polite">앱 연결을 확인하는 중…</div>
+  <button id="check" type="button">연결 다시 확인</button>
+  <button id="settings" type="button">설정 · EXE 경로 변경</button>
+  <details><summary>설치·연결 안내</summary><ol>
+    <li>별도 설치 ZIP을 풀고 <b>Install.cmd</b>를 실행합니다.</li>
+    <li>TurnTabler 2.1.2 이상의 <b>TurnTabler.exe</b>를 선택합니다.</li>
+    <li>확장 설정에서 연결된 EXE 경로와 버전을 확인합니다.</li>
+  </ol><p>EXE를 옮겼다면 위의 설정에서 경로를 변경하세요.</p></details>
+  <script src="popup.mjs" type="module"></script>
+</body>
+</html>

@@ -103,7 +103,8 @@ public partial class WidgetWindow : Window
                 Top = Math.Clamp(Top, area.Top, Math.Max(area.Top, area.Bottom - Height));
             }
             await InitializeBrowser();
-            if (Program.Smoke) await SmokeChecks();
+            if (Program.BrowserSmoke) await BrowserSmokeChecks();
+            else if (Program.Smoke) await SmokeChecks();
             else
             {
                 var link = Program.Arguments.FirstOrDefault(arg => arg.StartsWith("https://", StringComparison.OrdinalIgnoreCase));
@@ -205,7 +206,17 @@ public partial class WidgetWindow : Window
         catch (InvalidOperationException) { }
     }
 
-    private async Task LoadAddress()
+    internal async Task PlayFromBrowser(string url)
+    {
+        var uri = YouTubeAddress.Parse(url);
+        await browserInitialized.Task.WaitAsync(TimeSpan.FromSeconds(25));
+        if (closing) throw new InvalidOperationException("TurnTabler가 종료 중입니다. 다시 시도해 주세요.");
+        ShowWidget();
+        Address.Text = uri.AbsoluteUri;
+        await LoadAddress(true);
+    }
+
+    private async Task LoadAddress(bool propagateErrors = false)
     {
         try
         {
@@ -218,8 +229,8 @@ public partial class WidgetWindow : Window
             SettingsPanel.Visibility = Visibility.Collapsed;
             PlaylistPanel.Visibility = Visibility.Collapsed;
         }
-        catch (ArgumentException error) { Notice(error.Message); }
-        catch (Exception error) { Notice("재생을 시작하지 못했습니다: " + error.Message); }
+        catch (ArgumentException error) { Notice(error.Message); if (propagateErrors) throw; }
+        catch (Exception error) { Notice("재생을 시작하지 못했습니다: " + error.Message); if (propagateErrors) throw; }
     }
 
     private async Task Execute(string script)
