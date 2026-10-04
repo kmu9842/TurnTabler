@@ -8,7 +8,7 @@ namespace TurnTabler;
 
 internal static class Artwork
 {
-    internal static (BitmapSource Body, BitmapSource Record, BitmapSource Highlights) Load()
+    internal static (BitmapSource Body, BitmapSource Record, BitmapSource Highlights, BitmapSource Tonearm) Load()
     {
         var source = new BitmapImage();
         using var imageStream = BundledAssets.Open("Record.png");
@@ -20,10 +20,13 @@ internal static class Artwork
         var bitmap = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
         int width = bitmap.PixelWidth, height = bitmap.PixelHeight, stride = width * 4;
         var pixels = new byte[stride * height]; bitmap.CopyPixels(pixels, stride, 0);
+        var armPixels = new byte[pixels.Length];
         var plinth = Geometry.Parse("M157,66 H1362 Q1469,66 1469,175 V850 Q1469,958 1364,958 H158 Q61,958 61,852 V172 Q61,66 157,66 Z");
         var inner = Geometry.Parse("M165,111 H1358 Q1429,111 1429,184 V845 Q1429,920 1358,920 H166 Q104,920 104,843 V187 Q104,111 165,111 Z");
         var hardware = Geometry.Parse("M1245,83 H1358 V190 H1245 Z M1280,179 A117,117 0 1 0 1280,413 A117,117 0 1 0 1280,179 M1098,665 L1182,701 1118,821 1010,772 Z");
         var tube = Geometry.Parse("M1293,172 L1287,466 C1295,602 1260,674 1117,738 M1340,332 L1427,421 M1109,771 L1157,818").GetWidenedPathGeometry(new Pen(Brushes.White, 35));
+        var movingTube = Geometry.Parse("M1287,351 L1287,466 C1295,602 1260,674 1117,738 M1109,771 L1157,818").GetWidenedPathGeometry(new Pen(Brushes.White, 35));
+        var cartridge = Geometry.Parse("M1098,665 L1182,701 1118,821 1010,772 Z");
         for (int y = 0; y < height; y++) for (int x = 0; x < width; x++)
         {
             int i = y * stride + x * 4;
@@ -41,6 +44,11 @@ internal static class Artwork
                 if (inner.FillContains(point)) alpha *= .32;
             }
             pixels[i + 3] = (byte)Math.Round(alpha * 255);
+            if (instrument && y >= 351 && (movingTube.FillContains(point) || cartridge.FillContains(point)))
+            {
+                Array.Copy(pixels, i, armPixels, i, 4);
+                pixels[i + 3] = 0;
+            }
         }
         var body = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, pixels, stride); body.Freeze();
         var crop = new CroppedBitmap(source, new Int32Rect(201, 43, 926, 888));
@@ -67,6 +75,7 @@ internal static class Artwork
             highlights[i + 3] = (byte)(alpha == 0 || radius < 99 ? 0 : Math.Clamp((value - 13) * .85, 0, 115));
         }
         var sheen = BitmapSource.Create(540, 540, 96, 96, PixelFormats.Bgra32, null, highlights, 540 * 4); sheen.Freeze();
-        return (body, rotor, sheen);
+        var arm = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, armPixels, stride); arm.Freeze();
+        return (body, rotor, sheen, arm);
     }
 }

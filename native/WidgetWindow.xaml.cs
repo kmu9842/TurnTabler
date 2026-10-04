@@ -24,6 +24,7 @@ public partial class WidgetWindow : Window
     {
         public string Url { get; set; } = "";
         public double Volume { get; set; } = 65;
+        public bool Captions { get; set; }
         public bool Pin { get; set; } = true;
         public bool Rotation { get; set; } = true;
         public bool Effect { get; set; } = true;
@@ -48,6 +49,10 @@ public partial class WidgetWindow : Window
     private string currentVideoId = "", currentVideoUrl = "";
     private readonly Stack<string> previousVideos = new();
     private bool navigatingBack;
+    public sealed record PlaylistEntry(string Number, string Title, string Url, string VideoId);
+    private List<PlaylistEntry> playlist = new();
+    private bool updatingPlaylist;
+    private readonly System.Drawing.Icon appTrayIcon;
     private JsonElement lastState;
     private readonly TaskCompletionSource browserInitialized = new();
     private string PreferencesPath => Path.Combine(Program.DataDirectory, "preferences.json");
@@ -59,9 +64,15 @@ public partial class WidgetWindow : Window
         preferences.Volume = Math.Clamp(preferences.Volume, 0, 100);
         preferences.Size = Math.Clamp(preferences.Size, 0, 2);
         InitializeComponent();
-        var artwork = Artwork.Load(); GlassBody.Source = artwork.Body; RecordTexture.Source = artwork.Record; GrooveHighlights.Source = artwork.Highlights;
+        var artwork = Artwork.Load(); GlassBody.Source = artwork.Body; RecordTexture.Source = artwork.Record; GrooveHighlights.Source = artwork.Highlights; Tonearm.Source = artwork.Tonearm;
+        using (var iconStream = BundledAssets.Open("App.ico"))
+            Icon = BitmapFrame.Create(iconStream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+        using (var iconStream = BundledAssets.Open("App.ico"))
+        using (var sourceIcon = new System.Drawing.Icon(iconStream, 32, 32))
+            appTrayIcon = (System.Drawing.Icon)sourceIcon.Clone();
         Address.Text = preferences.Url;
         Volume.Value = Program.Smoke ? 0 : preferences.Volume;
+        CaptionsButton.IsChecked = preferences.Captions;
         PinOption.IsChecked = preferences.Pin; RotationOption.IsChecked = preferences.Rotation;
         EffectOption.IsChecked = preferences.Effect; AmbientOption.IsChecked = preferences.Ambient;
         LightStrength.Value = Math.Clamp(preferences.LightStrength, 0, 100);
@@ -69,7 +80,7 @@ public partial class WidgetWindow : Window
         initialized = true;
         ApplyOptions(); SetSize();
         if (Program.Smoke) { Left = -10000; Top = -10000; Topmost = false; }
-        tray = new Forms.NotifyIcon { Text = "TurnTabler", Icon = System.Drawing.SystemIcons.Application, Visible = true };
+        tray = new Forms.NotifyIcon { Text = "TurnTabler", Icon = appTrayIcon, Visible = true };
         tray.DoubleClick += (_, _) => Dispatcher.Invoke(ShowWidget);
         tray.ContextMenuStrip = new Forms.ContextMenuStrip();
         tray.ContextMenuStrip.Items.Add("위젯 표시", null, (_, _) => Dispatcher.Invoke(ShowWidget));
@@ -99,9 +110,9 @@ public partial class WidgetWindow : Window
         Closed += (_, _) =>
         {
             closing = true; Save(); visualTimer.Stop(); CompositionTarget.Rendering -= Animate;
-            pageWindow?.Close(); Browser.Dispose(); tray.Dispose();
+            pageWindow?.Close(); Browser.Dispose(); tray.Dispose(); appTrayIcon.Dispose();
         };
-        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) SettingsPanel.Visibility = Visibility.Collapsed; };
+        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { SettingsPanel.Visibility = Visibility.Collapsed; PlaylistPanel.Visibility = Visibility.Collapsed; } };
     }
 
     private async Task InitializeBrowser()
@@ -135,11 +146,12 @@ public partial class WidgetWindow : Window
             {
                 if (!e.IsSuccess) { playing = false; Notice("유튜브 페이지를 열지 못했습니다: " + e.WebErrorStatus); return; }
                 await Execute("window.turntablerNative?.setVolume(" + Volume.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "); window.turntablerNative?.setWidgetMode(" + (pageWindow == null ? "true" : "false") + ")");
+                await Execute("window.turntablerNative?.setCaptions(" + (preferences.Captions ? "true" : "false") + ")");
                 if (!YouTubeAddress.IsYouTubePage(core.Source)) Notice("설정의 ‘유튜브 페이지 보기’에서 로그인 또는 동의를 진행하세요.");
             };
             core.ProcessFailed += (_, e) => { playing = false; Notice("재생 프로세스가 종료되었습니다. 링크를 다시 실행해 주세요."); };
             var bridge = BundledAssets.ReadText("YouTubeBridge.js");
-            await core.AddScriptToExecuteOnDocumentCreatedAsync("window.__turntablerInitialVolume=" + Volume.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + ";\n" + bridge);
+            await core.AddScriptToExecuteOnDocumentCreatedAsync("window.__turntablerInitialVolume=" + Volume.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "; window.__turntablerInitialCaptions=" + (preferences.Captions ? "true" : "false") + ";\n" + bridge);
             browserReady = true; browserInitialized.TrySetResult();
         }
         catch (Exception error) { Notice("영상 엔진을 시작하지 못했습니다: " + error.Message); browserInitialized.TrySetException(error); }
@@ -163,6 +175,11 @@ public partial class WidgetWindow : Window
             TrackTitle.Text = state.GetProperty("title").GetString();
             Previous.IsEnabled = previousVideos.Count > 0 || state.GetProperty("hasPrevious").GetBoolean();
             Next.IsEnabled = state.GetProperty("hasNext").GetBoolean();
+            UpdatePlaylist(state);
+            bool captionsAvailable = state.GetProperty("captionsAvailable").GetBoolean();
+            bool captionsOn = state.GetProperty("captionsEnabled").GetBoolean();
+            CaptionsButton.IsChecked = preferences.Captions;
+            CaptionsButton.ToolTip = captionsAvailable ? (captionsOn ? "자막 끄기" : "자막 켜기") : "이 영상은 자막을 제공하지 않습니다";
             string error = state.GetProperty("error").GetString() ?? "";
             if (error.Length > 0) Notice(error.Length > 180 ? error[..180] : error);
             else if (hasVideo) Notice("");
@@ -196,6 +213,7 @@ public partial class WidgetWindow : Window
             preferences.Url = uri.AbsoluteUri; Save();
             Browser.CoreWebView2.Navigate(uri.AbsoluteUri);
             SettingsPanel.Visibility = Visibility.Collapsed;
+            PlaylistPanel.Visibility = Visibility.Collapsed;
         }
         catch (ArgumentException error) { Notice(error.Message); }
         catch (Exception error) { Notice("재생을 시작하지 못했습니다: " + error.Message); }
@@ -221,6 +239,52 @@ public partial class WidgetWindow : Window
         else await Execute("window.turntablerNative?.previous()");
     }
     private async void NextTrack(object sender, RoutedEventArgs e) => await Execute("window.turntablerNative?.next()");
+    private async void CaptionsChanged(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (!initialized) return;
+        preferences.Captions = CaptionsButton.IsChecked == true; Save();
+        await Execute("window.turntablerNative?.setCaptions(" + (preferences.Captions ? "true" : "false") + ")");
+    }
+    private void UpdatePlaylist(JsonElement state)
+    {
+        var entries = new List<PlaylistEntry>();
+        int selected = -1;
+        foreach (var track in state.GetProperty("tracks").EnumerateArray())
+        {
+            try
+            {
+                var url = YouTubeAddress.Parse(track.GetProperty("url").GetString() ?? "").AbsoluteUri;
+                entries.Add(new PlaylistEntry(track.GetProperty("number").GetString() ?? "", track.GetProperty("title").GetString() ?? "", url, track.GetProperty("videoId").GetString() ?? ""));
+                if (track.GetProperty("selected").GetBoolean()) selected = entries.Count - 1;
+            }
+            catch (ArgumentException) { }
+        }
+        if (selected < 0) selected = entries.FindIndex(track => track.VideoId == state.GetProperty("videoId").GetString());
+        updatingPlaylist = true;
+        try
+        {
+            if (!playlist.SequenceEqual(entries)) { playlist = entries; PlaylistTracks.ItemsSource = playlist; }
+            PlaylistTracks.SelectedIndex = selected;
+            PlaylistButton.IsEnabled = playlist.Count > 0;
+            PlaylistHeading.Text = "재생목록 · " + playlist.Count;
+        }
+        finally { updatingPlaylist = false; }
+    }
+    private void TogglePlaylist(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        SettingsPanel.Visibility = Visibility.Collapsed;
+        PlaylistPanel.Visibility = PlaylistPanel.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+        if (PlaylistPanel.Visibility == Visibility.Visible && PlaylistTracks.SelectedItem != null)
+            PlaylistTracks.ScrollIntoView(PlaylistTracks.SelectedItem);
+    }
+    private async void SelectPlaylistTrack(object sender, SelectionChangedEventArgs e)
+    {
+        if (updatingPlaylist || PlaylistTracks.SelectedItem is not PlaylistEntry track) return;
+        Address.Text = track.Url;
+        await LoadAddress();
+    }
     private async void ChangeVolume(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         if (!initialized) return;
@@ -261,7 +325,7 @@ public partial class WidgetWindow : Window
         catch (Exception) when (!closing) { }
         finally { sampling = false; }
     }
-    private void ToggleSettings(object sender, RoutedEventArgs e) { e.Handled = true; SettingsPanel.Visibility = SettingsPanel.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible; }
+    private void ToggleSettings(object sender, RoutedEventArgs e) { e.Handled = true; PlaylistPanel.Visibility = Visibility.Collapsed; SettingsPanel.Visibility = SettingsPanel.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible; }
     private void OptionsChanged(object sender, RoutedEventArgs e)
     {
         if (!initialized) return;
@@ -272,7 +336,7 @@ public partial class WidgetWindow : Window
     private void ApplyOptions() { Topmost = preferences.Pin; Film.Visibility = preferences.Effect ? Visibility.Visible : Visibility.Collapsed; Ambient.Visibility = preferences.Ambient ? Visibility.Visible : Visibility.Collapsed; Ambient.Opacity = preferences.LightStrength / 100; }
     private void LightStrengthChanged(object sender, RoutedPropertyChangedEventArgs<double> e) { if (!initialized) return; preferences.LightStrength = LightStrength.Value; Ambient.Opacity = preferences.LightStrength / 100; Save(); }
     private void WidgetSizeChanged(object sender, SelectionChangedEventArgs e) { if (!initialized) return; preferences.Size = SizeOption.SelectedIndex; SetSize(); Dock(); Save(); }
-    private void SetSize() { double scale = new[] { .8, 1, 1.2 }[preferences.Size]; Width = 460 * scale; Height = 414 * scale; WidgetScale.Width = Width; WidgetScale.Height = Height; }
+    private void SetSize() { double scale = new[] { .8, 1, 1.2 }[preferences.Size]; Width = 460 * scale; Height = 390 * scale; WidgetScale.Width = Width; WidgetScale.Height = Height; }
     private Rect WorkArea()
     {
         var display = Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle).WorkingArea;
@@ -286,7 +350,7 @@ public partial class WidgetWindow : Window
     {
         if (e.Handled || e.ChangedButton != MouseButton.Left) return;
         DependencyObject? target = e.OriginalSource as DependencyObject;
-        while (target != null && target != Deck) { if (target is Button || target is Slider) return; target = VisualTreeHelper.GetParent(target); }
+        while (target != null && target != Deck) { if (target is System.Windows.Controls.Primitives.ButtonBase || target is Slider) return; target = VisualTreeHelper.GetParent(target); }
         try { DragMove(); preferences.Left = Left; preferences.Top = Top; Save(); } catch (InvalidOperationException) { }
     }
     private void HideWidget(object sender, RoutedEventArgs e) { SettingsPanel.Visibility = Visibility.Collapsed; Hide(); }
@@ -396,10 +460,49 @@ public partial class WidgetWindow : Window
             SettingsPanel.Visibility = Visibility.Collapsed;
             await Execute("window.turntablerNative.play()"); await Until(() => playing, "재생 재개");
             await Until(() => lastState.GetProperty("playlistCount").GetInt32() > 1 && Next.IsEnabled, "믹스 목록 불러오기");
+            if (PlaylistTracks.Items.Count < 2 || !PlaylistButton.IsEnabled) throw new Exception("위젯 재생목록을 표시하지 못함");
+            PlaylistButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Task.Delay(200); Capture("playlist");
+            PlaylistPanel.Visibility = Visibility.Collapsed;
             await Execute("window.turntablerNative.next()");
             await Until(() => playing && lastState.GetProperty("videoId").GetString() != "2qfoSxRRCJc", "다음 곡");
             PreviousTrack(this, new RoutedEventArgs());
             await Until(() => playing && lastState.GetProperty("videoId").GetString() == "2qfoSxRRCJc", "이전 곡");
+            var selectedTrack = playlist.First(track => track.VideoId != "2qfoSxRRCJc");
+            PlaylistTracks.SelectedItem = selectedTrack;
+            await Until(() => playing && lastState.GetProperty("videoId").GetString() == selectedTrack.VideoId, "재생목록에서 직접 선택");
+            await Until(() => lastState.GetProperty("duration").GetDouble() > 10 && Next.IsEnabled, "자동 다음 곡 준비");
+            await Execute("(()=>{const p=document.getElementById('movie_player'),v=document.querySelector('video');p.seekTo(v.duration-1,true);p.playVideo()})()");
+            await Until(() => playing && lastState.GetProperty("videoId").GetString() != selectedTrack.VideoId, "곡이 끝난 뒤 자동 다음 곡", 60000);
+            // A music upload may have burned-in text only. Verify real selectable captions on a captioned video.
+            Address.Text = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"; await LoadAddress();
+            await Until(() => playing && lastState.GetProperty("videoId").GetString() == "dQw4w9WgXcQ" && lastState.GetProperty("captionsAvailable").GetBoolean(), "자막 제공 영상 준비");
+            CaptionsButton.IsChecked = true; CaptionsButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            await Until(() => lastState.GetProperty("captionsEnabled").GetBoolean(), "유튜브 자막 켜기");
+            await Execute("document.getElementById('movie_player').seekTo(45,true)");
+            string captionText = "";
+            var captionWait = Stopwatch.StartNew();
+            while (captionText.Length == 0 && captionWait.ElapsedMilliseconds < 15000)
+            {
+                await Task.Delay(400);
+                captionText = JsonSerializer.Deserialize<string>(await Browser.CoreWebView2.ExecuteScriptAsync("[...document.querySelectorAll('.caption-window')].filter(e=>getComputedStyle(e).visibility==='visible'&&getComputedStyle(e).display!=='none').map(e=>e.innerText).join(' ').trim()")) ?? "";
+            }
+            if (captionText.Length == 0) throw new Exception("켜진 자막이 실제 화면에 나타나지 않음");
+            Capture("captions-on");
+            // A complete navigation also has to preserve the CC preference.
+            Address.Text = "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=50"; await LoadAddress();
+            await Until(() => playing && lastState.GetProperty("url").GetString()!.Contains("t=50") && lastState.GetProperty("captionsEnabled").GetBoolean(), "자막 설정 유지");
+            CaptionsButton.IsChecked = false; CaptionsButton.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
+            await Until(() => !lastState.GetProperty("captionsEnabled").GetBoolean(), "유튜브 자막 끄기");
+            var captionsHidden = await Browser.CoreWebView2.ExecuteScriptAsync("!document.documentElement.classList.contains('tt-captions') && [...document.querySelectorAll('.ytp-caption-window-container')].every(e=>getComputedStyle(e).display==='none')");
+            if (captionsHidden != "true") throw new Exception("위젯에서 자막 숨김 실패");
+            const string standardPlaylist = "PLa1F2ddGya_-UvuAqHAksYnB0qL9yWDO6";
+            Address.Text = "https://www.youtube.com/playlist?list=" + standardPlaylist; await LoadAddress();
+            await Until(() => playing && lastState.GetProperty("url").GetString()!.Contains(standardPlaylist) && playlist.Count > 1, "영상 ID 없는 일반 재생목록 시작");
+            string firstPlaylistVideo = lastState.GetProperty("videoId").GetString()!;
+            await Execute("window.turntablerNative.next()");
+            await Until(() => playing && lastState.GetProperty("url").GetString()!.Contains(standardPlaylist) && lastState.GetProperty("videoId").GetString() != firstPlaylistVideo, "일반 재생목록 다음 곡");
+            Address.Text = "https://www.youtube.com/watch?v=2qfoSxRRCJc&list=RD2qfoSxRRCJc&index=1"; await LoadAddress();
+            await Until(() => playing && lastState.GetProperty("videoId").GetString() == "2qfoSxRRCJc", "요청 영상 복귀");
             preferences.Rotation = false; angle = RecordRotation.Angle; await Task.Delay(250);
             if (angle != RecordRotation.Angle) throw new Exception("회전 설정 끄기 실패");
             preferences.Rotation = true;
@@ -410,7 +513,7 @@ public partial class WidgetWindow : Window
             await Until(() => pageWindow == null && VideoViewbox.Child == Browser, "위젯으로 돌아오기");
             await Execute("window.turntablerNative.play()"); await Until(() => playing, "페이지 복귀 후 재생");
             if (AllowsTransparency != true || WindowStyle != WindowStyle.None || ShowInTaskbar != false) throw new Exception("네이티브 위젯 창 속성 실패");
-            var report = new { success = true, engine = "WPF + Windows WebView2", source = Browser.CoreWebView2.Source, playback, nativeRecordRotated = true, pauseStoppedRecord = true, volumeVerified = true, playlistNavigation = true, originalPageRoundTrip = true, rotationOptionVerified = true, projectionCoverage = Projection.Width / Record.Width, projectionOpacity = VideoViewbox.Opacity, ambientFrames, revolutionSeconds = RevolutionSeconds, centerOffset, videoGeometry, outsideGlowPixels, insideGlowPixels };
+            var report = new { success = true, engine = "WPF + Windows WebView2", source = Browser.CoreWebView2.Source, playback, nativeRecordRotated = true, pauseStoppedRecord = true, volumeVerified = true, playlistNavigation = true, playlistSelection = true, playlistAutoAdvance = true, standalonePlaylist = true, captionsOnOff = true, captionsSurviveNavigation = true, visibleCaptionText = captionText, originalPageRoundTrip = true, rotationOptionVerified = true, projectionCoverage = Projection.Width / Record.Width, projectionOpacity = VideoViewbox.Opacity, ambientFrames, revolutionSeconds = RevolutionSeconds, centerOffset, videoGeometry, outsideGlowPixels, insideGlowPixels };
             File.WriteAllText(Path.Combine(output, "verification.json"), JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
             Application.Current.Shutdown(0);
         }

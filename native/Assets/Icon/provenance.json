@@ -1,0 +1,10 @@
+{
+  "provider": "Forge",
+  "visibility": "private",
+  "privacyVerified": true,
+  "model": "gpt_image_25_sunburst",
+  "assetId": "ata_25a3b3d0d0bfd0f55c1dad6ce703212e6d6b33a8f9c75973",
+  "sourceFile": "forge-gpt-image-2-5-sunburst-1.png",
+  "prompt": "Create a finished square Windows desktop application icon for TurnTabler, a polished glass-and-chrome vinyl turntable video widget. Show one large black vinyl record with clearly readable concentric grooves and a tiny luminous ice-cyan center, on a compact smoked-glass rounded square plinth with a polished silver chrome edge; a single slim chrome tonearm sits at the upper right with its needle just touching the record's outer groove. Use a near top-down product view, a bold centered silhouette, very few elements, and generous clean separation so the icon stays recognizable at 32 pixels. Cool cyan and subtle lavender light refract through the glass, with controlled studio strip highlights on the silver metal. Use a deep blue-black full-bleed square background and let the turntable fill about 86 percent of the canvas. Keep the appearance refined, tactile, realistic and consistent with a transparent glass hi-fi widget. Deliver the icon itself, without a surrounding mockup, typography, letters, watermark, play triangle, or extra decorations.",
+  "packaging": "Original PNG resized only to package standard Windows ICO sizes (16–256 px)."
+}

@@ -7,7 +7,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <AssemblyName>TurnTabler</AssemblyName>
-    <Version>2.0.0</Version>
+    <Version>2.1.0</Version>
+    <ApplicationIcon>Assets/Icon/TurnTabler.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <StartupObject>TurnTabler.Program</StartupObject>
   </PropertyGroup>
@@ -15,5 +16,6 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
     <EmbeddedResource Include="../ui/assets/glass-turntable.png" LogicalName="TurnTabler.Assets.Record.png" />
     <EmbeddedResource Include="YouTubeBridge.js" LogicalName="TurnTabler.Assets.YouTubeBridge.js" />
+    <EmbeddedResource Include="Assets/Icon/TurnTabler.ico" LogicalName="TurnTabler.Assets.App.ico" />
   </ItemGroup>
 </Project>
