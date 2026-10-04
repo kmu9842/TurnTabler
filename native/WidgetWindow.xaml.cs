@@ -24,6 +24,7 @@ public partial class WidgetWindow : Window
     {
         public string Url { get; set; } = "";
         public double Volume { get; set; } = 65;
+        public double VideoOpacity { get; set; } = 58;
         public bool Captions { get; set; }
         public bool Pin { get; set; } = true;
         public bool Rotation { get; set; } = true;
@@ -40,7 +41,7 @@ public partial class WidgetWindow : Window
     private readonly Stopwatch animationClock = Stopwatch.StartNew();
     private readonly DispatcherTimer visualTimer;
     private double previousFrame;
-    private bool initialized, browserReady, playing, sampling, closing;
+    private bool initialized, browserReady, playing, sampling, closing, videoAvailable;
     private bool ambientLayer;
     private int ambientFrames;
     private const double RevolutionSeconds = 24;
@@ -62,6 +63,7 @@ public partial class WidgetWindow : Window
         try { preferences = JsonSerializer.Deserialize<Preferences>(File.ReadAllText(PreferencesPath)) ?? new(); }
         catch { preferences = new(); }
         preferences.Volume = Math.Clamp(preferences.Volume, 0, 100);
+        preferences.VideoOpacity = Math.Clamp(preferences.VideoOpacity, 0, 100);
         preferences.Size = Math.Clamp(preferences.Size, 0, 2);
         InitializeComponent();
         var artwork = Artwork.Load(); GlassBody.Source = artwork.Body; RecordTexture.Source = artwork.Record; GrooveHighlights.Source = artwork.Highlights; Tonearm.Source = artwork.Tonearm;
@@ -84,6 +86,7 @@ public partial class WidgetWindow : Window
         tray.DoubleClick += (_, _) => Dispatcher.Invoke(ShowWidget);
         tray.ContextMenuStrip = new Forms.ContextMenuStrip();
         tray.ContextMenuStrip.Items.Add("위젯 표시", null, (_, _) => Dispatcher.Invoke(ShowWidget));
+        tray.ContextMenuStrip.Items.Add("옵션", null, (_, _) => Dispatcher.Invoke(ShowTrayOptions));
         tray.ContextMenuStrip.Items.Add("종료", null, (_, _) => Dispatcher.Invoke(Close));
         CompositionTarget.Rendering += Animate;
         visualTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(320) };
@@ -110,7 +113,7 @@ public partial class WidgetWindow : Window
         Closed += (_, _) =>
         {
             closing = true; Save(); visualTimer.Stop(); CompositionTarget.Rendering -= Animate;
-            pageWindow?.Close(); Browser.Dispose(); tray.Dispose(); appTrayIcon.Dispose();
+            trayOptionsWindow?.Close(); pageWindow?.Close(); Browser.Dispose(); tray.Dispose(); appTrayIcon.Dispose();
         };
         PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { SettingsPanel.Visibility = Visibility.Collapsed; PlaylistPanel.Visibility = Visibility.Collapsed; } };
     }
@@ -170,9 +173,9 @@ public partial class WidgetWindow : Window
             lastState = state.Clone();
             playing = state.GetProperty("playing").GetBoolean();
             bool hasVideo = state.GetProperty("hasVideo").GetBoolean();
-            VideoViewbox.Opacity = hasVideo ? (preferences.Effect ? .67 : .85) : 0;
+            videoAvailable = hasVideo;
+            ApplyVideoOpacity();
             Play.Content = playing ? "Ⅱ" : "▶";
-            TrackTitle.Text = state.GetProperty("title").GetString();
             Previous.IsEnabled = previousVideos.Count > 0 || state.GetProperty("hasPrevious").GetBoolean();
             Next.IsEnabled = state.GetProperty("hasNext").GetBoolean();
             UpdatePlaylist(state);
@@ -209,7 +212,7 @@ public partial class WidgetWindow : Window
             var uri = YouTubeAddress.Parse(Address.Text);
             Notice("유튜브를 불러오는 중…");
             await browserInitialized.Task;
-            playing = false; VideoViewbox.Opacity = 0; Previous.IsEnabled = Next.IsEnabled = false;
+            playing = false; videoAvailable = false; ApplyVideoOpacity(); Previous.IsEnabled = Next.IsEnabled = false;
             preferences.Url = uri.AbsoluteUri; Save();
             Browser.CoreWebView2.Navigate(uri.AbsoluteUri);
             SettingsPanel.Visibility = Visibility.Collapsed;
@@ -407,6 +410,7 @@ public partial class WidgetWindow : Window
             await browserInitialized.Task;
             File.Delete(Path.Combine(output, "failure.json"));
             File.Delete(Path.Combine(output, "verification.json"));
+            await CheckTrayOpacity(false);
             Capture("idle");
             Background = new SolidColorBrush(Color.FromRgb(65, 79, 95));
             await Task.Delay(150);
@@ -444,6 +448,7 @@ public partial class WidgetWindow : Window
                 else if (!Ambient.Clip.StrokeContains(edgeTolerance, point)) outsideGlowPixels++;
             }
             if (outsideGlowPixels != 0 || insideGlowPixels < 1000) throw new Exception("받침대 반사광 경계 확인 실패: outside=" + outsideGlowPixels + ", inside=" + insideGlowPixels);
+            await CheckTrayOpacity(true);
             Capture("playing");
             Background = new SolidColorBrush(Color.FromRgb(65, 79, 95));
             await Task.Delay(150);
@@ -514,7 +519,9 @@ public partial class WidgetWindow : Window
             await Until(() => pageWindow == null && VideoViewbox.Child == Browser, "위젯으로 돌아오기");
             await Execute("window.turntablerNative.play()"); await Until(() => playing, "페이지 복귀 후 재생");
             if (AllowsTransparency != true || WindowStyle != WindowStyle.None || ShowInTaskbar != false) throw new Exception("네이티브 위젯 창 속성 실패");
-            var report = new { success = true, engine = "WPF + Windows WebView2", source = Browser.CoreWebView2.Source, playback, nativeRecordRotated = true, pauseStoppedRecord = true, volumeVerified = true, playlistNavigation = true, playlistSelection = true, playlistAutoAdvance = true, standalonePlaylist = true, captionsOnOff = true, captionsSurviveNavigation = true, visibleCaptionText = captionText, originalPageRoundTrip = true, rotationOptionVerified = true, projectionCoverage = Projection.Width / Record.Width, projectionOpacity = VideoViewbox.Opacity, ambientFrames, revolutionSeconds = RevolutionSeconds, centerOffset, videoGeometry, outsideGlowPixels, insideGlowPixels };
+            if (Math.Abs(VideoViewbox.Opacity - .58) > .001) throw new Exception("이동 후 영상 불투명도가 유지되지 않음");
+            if (Math.Abs(TransportBar.Opacity - .1) > .001) throw new Exception("재생 중 조절바 불투명도 오류");
+            var report = new { success = true, engine = "WPF + Windows WebView2", source = Browser.CoreWebView2.Source, playback, nativeRecordRotated = true, pauseStoppedRecord = true, volumeVerified = true, trayOpacityVerified = true, opacitySaved = true, playlistNavigation = true, playlistSelection = true, playlistAutoAdvance = true, standalonePlaylist = true, captionsOnOff = true, captionsSurviveNavigation = true, visibleCaptionText = captionText, originalPageRoundTrip = true, rotationOptionVerified = true, projectionCoverage = Projection.Width / Record.Width, projectionOpacity = VideoViewbox.Opacity, ambientFrames, revolutionSeconds = RevolutionSeconds, centerOffset, videoGeometry, outsideGlowPixels, insideGlowPixels };
             File.WriteAllText(Path.Combine(output, "verification.json"), JsonSerializer.Serialize(report, new JsonSerializerOptions { WriteIndented = true }));
             Application.Current.Shutdown(0);
         }

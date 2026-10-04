@@ -71,7 +71,7 @@
             <Image x:Name="GrooveHighlights" Width="265.2" Height="265.2" Canvas.Left="57.6" Canvas.Top="6.9" Opacity="0.55" IsHitTestVisible="False"/>
             <Image x:Name="GlassBody" Width="440" Height="293.333" IsHitTestVisible="False"/>
             <Image x:Name="Tonearm" Width="440" Height="293.333" IsHitTestVisible="False"><Image.RenderTransform><RotateTransform Angle="3" CenterX="368.671875" CenterY="100.546875"/></Image.RenderTransform></Image>
-            <Button x:Name="SettingsButton" Content="⚙" Width="29" Height="29" Canvas.Left="397" Canvas.Top="17" Click="ToggleSettings" ToolTip="설정" FontSize="19"/>
+            <Button x:Name="SettingsButton" Content="⚙" Width="29" Height="29" Canvas.Left="377.5" Canvas.Top="168" Click="ToggleSettings" ToolTip="설정" FontSize="19"/>
             <ToggleButton x:Name="CaptionsButton" Content="CC" Canvas.Left="377" Canvas.Top="205" Width="30" Height="19" Style="{StaticResource GlassToggle}" Click="CaptionsChanged" ToolTip="자막 켜기 / 끄기" AutomationProperties.Name="자막 켜기 또는 끄기"/>
             <Border x:Name="VolumeHousing" Canvas.Left="307" Canvas.Top="231" Width="108" Height="25" CornerRadius="7" BorderBrush="{StaticResource ChromeStroke}" BorderThickness="0.7" Background="{StaticResource ClearGlass}" Padding="7,0,4,0">
                 <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Path Data="M1,6 L4,6 8,2 8,14 4,10 1,10Z M10,5 Q14,8 10,11" Stroke="#CCFFFFFF" StrokeThickness="1" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center"/><Slider x:Name="Volume" Grid.Column="1" Minimum="0" Maximum="100" Value="65" Style="{StaticResource ChromeFader}" VerticalAlignment="Center" ValueChanged="ChangeVolume" ToolTip="음량"/></Grid>
@@ -95,7 +95,6 @@
             </Grid>
         </Border>
         <Grid x:Name="PlaybackInfo" Margin="10,3,10,0">
-            <TextBlock x:Name="TrackTitle" Foreground="#DDFFFFFF" FontSize="10" TextTrimming="CharacterEllipsis" TextAlignment="Center"><TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers><DataTrigger Binding="{Binding Visibility, ElementName=StatusBox}" Value="Visible"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></TextBlock.Style><TextBlock.Effect><DropShadowEffect BlurRadius="3" ShadowDepth="1" Opacity="1"/></TextBlock.Effect></TextBlock>
             <Border x:Name="StatusBox" Padding="3,0" Visibility="Collapsed"><TextBlock x:Name="StatusText" Foreground="#EEFFFFFF" FontSize="10.5" TextWrapping="Wrap" TextAlignment="Center"><TextBlock.Effect><DropShadowEffect BlurRadius="3" ShadowDepth="1" Opacity="1"/></TextBlock.Effect></TextBlock></Border>
         </Grid>
         </StackPanel>
