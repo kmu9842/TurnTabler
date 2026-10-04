@@ -79,6 +79,7 @@
         </Canvas>
         <StackPanel x:Name="TransportGroup" Canvas.Left="30" Canvas.Top="299" Width="400">
         <Border x:Name="TransportBar" Height="34" CornerRadius="10" BorderBrush="{StaticResource ChromeStroke}" BorderThickness="0.8" Background="{StaticResource ClearGlass}">
+            <Border.Style><Style TargetType="Border"><Setter Property="Opacity" Value="1"/><Style.Triggers><DataTrigger Binding="{Binding Content, ElementName=Play}" Value="Ⅱ"><Setter Property="Opacity" Value="0.1"/></DataTrigger></Style.Triggers></Style></Border.Style>
             <Border.Effect><DropShadowEffect BlurRadius="2" ShadowDepth="1" Opacity="0.55"/></Border.Effect>
             <Grid>
             <Border Margin="2" CornerRadius="7" BorderBrush="#35FFFFFF" BorderThickness="0.6" IsHitTestVisible="False"/>
