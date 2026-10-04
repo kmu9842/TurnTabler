@@ -57,25 +57,62 @@ internal static class Artwork
         {
             dc.PushClip(new EllipseGeometry(new Point(270, 270), 270, 270));
             dc.DrawImage(crop, new Rect(0, 0, 540, 540));
-            // Mirror unobstructed grooves into the sector beneath the stationary pickup.
-            var wedge = Geometry.Parse("M270,270 L646,407 A400,400 0 0 1 487,606 Z");
-            dc.PushClip(wedge); dc.PushTransform(new RotateTransform(180, 270, 270));
-            dc.DrawImage(crop, new Rect(0, 0, 540, 540)); dc.Pop(); dc.Pop(); dc.Pop();
+            dc.Pop();
         }
         var rotor = new RenderTargetBitmap(540, 540, 96, 96, PixelFormats.Pbgra32); rotor.Render(visual); rotor.Freeze();
         var straight = new FormatConvertedBitmap(rotor, PixelFormats.Bgra32, null, 0);
         var highlights = new byte[540 * 540 * 4]; straight.CopyPixels(highlights, 540 * 4, 0);
+        // Replace the pickup's photographed footprint with opposite-side grooves.
+        // Feather the sector edges so the repair does not leave a rotating fan-shaped seam.
+        var unpatched = (byte[])highlights.Clone();
+        static double Smooth(double value) { value = Math.Clamp(value, 0, 1); return value * value * (3 - 2 * value); }
+        for (int y = 0; y < 540; y++) for (int x = 0; x < 540; x++)
+        {
+            double angle = Math.Atan2(y - 269.5, x - 269.5) * 180 / Math.PI;
+            double radius = Math.Sqrt(Math.Pow(x - 269.5, 2) + Math.Pow(y - 269.5, 2));
+            double blend = Smooth((angle - 18) / 14) * Smooth((70 - angle) / 14) * Smooth((radius - 228) / 20);
+            if (blend <= 0) continue;
+            int destination = (y * 540 + x) * 4, opposite = ((539 - y) * 540 + 539 - x) * 4;
+            for (int channel = 0; channel < 3; channel++)
+                highlights[destination + channel] = (byte)Math.Round(unpatched[destination + channel] * (1 - blend) + unpatched[opposite + channel] * blend);
+        }
+        var surfacePixels = (byte[])highlights.Clone();
+        // Separate the photograph's broad studio lighting from its fine groove texture.
+        // The grooves turn with the disc; the light source stays in the room.
+        const int integralStride = 541;
+        var lightSum = new double[integralStride * integralStride];
+        var lightWeight = new int[lightSum.Length];
+        for (int y = 0; y < 540; y++) for (int x = 0; x < 540; x++)
+        {
+            int i = (y * 540 + x) * 4, k = (y + 1) * integralStride + x + 1;
+            int valid = highlights[i + 3] > 0 ? 1 : 0;
+            double luminance = (highlights[i] + highlights[i + 1] + highlights[i + 2]) / 3.0;
+            lightSum[k] = luminance * valid + lightSum[k - 1] + lightSum[k - integralStride] - lightSum[k - integralStride - 1];
+            lightWeight[k] = valid + lightWeight[k - 1] + lightWeight[k - integralStride] - lightWeight[k - integralStride - 1];
+        }
         for (int y = 0; y < 540; y++) for (int x = 0; x < 540; x++)
         {
             int i = (y * 540 + x) * 4;
             double radius = Math.Sqrt(Math.Pow(x - 270, 2) + Math.Pow(y - 270, 2));
             double value = (highlights[i] + highlights[i + 1] + highlights[i + 2]) / 3.0;
             byte alpha = highlights[i + 3];
-            highlights[i] = 231; highlights[i + 1] = 224; highlights[i + 2] = 211;
-            highlights[i + 3] = (byte)(alpha == 0 || radius < 99 ? 0 : Math.Clamp((value - 13) * .85, 0, 115));
+            int left = Math.Max(0, x - 22), right = Math.Min(540, x + 23);
+            int top = Math.Max(0, y - 22), bottom = Math.Min(540, y + 23);
+            int a = top * integralStride + left, b = top * integralStride + right;
+            int c = bottom * integralStride + left, d = bottom * integralStride + right;
+            double broadLight = (lightSum[d] - lightSum[b] - lightSum[c] + lightSum[a]) /
+                Math.Max(1, lightWeight[d] - lightWeight[b] - lightWeight[c] + lightWeight[a]);
+            double grooveBlend = Math.Clamp((radius - 100) / 15, 0, 1) * Math.Clamp((269 - radius) / 3, 0, 1);
+            double grooveValue = Math.Clamp(18 + (value - broadLight) * .65, 8, 58);
+            for (int channel = 0; channel < 3; channel++)
+                surfacePixels[i + channel] = (byte)Math.Round(surfacePixels[i + channel] * (1 - grooveBlend) + grooveValue * grooveBlend);
+            double edgeFade = Math.Clamp((radius - 100) / 20, 0, 1) * Math.Clamp((269 - radius) / 10, 0, 1);
+            highlights[i] = highlights[i + 1] = highlights[i + 2] = 235;
+            highlights[i + 3] = (byte)(alpha == 0 ? 0 : Math.Clamp((broadLight - 14) * .35, 0, 44) * edgeFade);
         }
+        var surface = BitmapSource.Create(540, 540, 96, 96, PixelFormats.Bgra32, null, surfacePixels, 540 * 4); surface.Freeze();
         var sheen = BitmapSource.Create(540, 540, 96, 96, PixelFormats.Bgra32, null, highlights, 540 * 4); sheen.Freeze();
         var arm = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgra32, null, armPixels, stride); arm.Freeze();
-        return (body, rotor, sheen, arm);
+        return (body, surface, sheen, arm);
     }
 }
