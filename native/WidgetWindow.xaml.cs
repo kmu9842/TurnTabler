@@ -414,6 +414,7 @@ public partial class WidgetWindow : Window
             Background = Brushes.Transparent;
             Address.Text = "https://www.youtube.com/watch?v=2qfoSxRRCJc&list=RD2qfoSxRRCJc&index=1";
             await LoadAddress();
+            UpdateLayout(); Capture("loading");
             await Until(() => playing && lastState.GetProperty("videoId").GetString() == "2qfoSxRRCJc", "요청 영상 재생");
             var startedAt = lastState.GetProperty("time").GetDouble();
             await Task.Delay(2300);

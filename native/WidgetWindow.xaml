@@ -3,6 +3,7 @@
     <Window.Resources>
         <LinearGradientBrush x:Key="ChromeStroke" StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#BDECF8FF" Offset="0"/><GradientStop Color="#45758CA3" Offset="0.45"/><GradientStop Color="#929CB7C7" Offset="1"/></LinearGradientBrush>
         <LinearGradientBrush x:Key="SmokedGlass" StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#B9364856" Offset="0"/><GradientStop Color="#D313202C" Offset="0.52"/><GradientStop Color="#BE253745" Offset="1"/></LinearGradientBrush>
+        <LinearGradientBrush x:Key="ClearGlass" StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#32E5F6FF" Offset="0"/><GradientStop Color="#0D99C2D6" Offset="0.42"/><GradientStop Color="#142D4556" Offset="0.75"/><GradientStop Color="#26D4E9F5" Offset="1"/></LinearGradientBrush>
         <Style TargetType="Button">
             <Setter Property="Foreground" Value="#E8F4FD"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Cursor" Value="Hand"/><Setter Property="FontSize" Value="17"/><Setter Property="Padding" Value="5"/>
             <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button"><Border x:Name="Chrome" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Chrome" Property="Background" Value="#35C9E7FF"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.3"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter>
@@ -44,10 +45,10 @@
                 <Ellipse Fill="#101113"/>
                 <Image x:Name="RecordTexture" Stretch="Fill"><Image.Clip><EllipseGeometry Center="132.6,132.6" RadiusX="132.6" RadiusY="132.6"/></Image.Clip></Image>
             </Grid>
-            <Grid x:Name="Projection" Width="259.2" Height="259.2" Canvas.Left="60.6" Canvas.Top="9.9" Background="Transparent">
-                <Grid.Clip><EllipseGeometry Center="129.6,129.6" RadiusX="129.6" RadiusY="129.6"/></Grid.Clip>
+            <Grid x:Name="Projection" Width="251.2" Height="251.2" Canvas.Left="64.6" Canvas.Top="13.9" Background="Transparent">
+                <Grid.Clip><EllipseGeometry Center="125.6,125.6" RadiusX="125.6" RadiusY="125.6"/></Grid.Clip>
                 <Grid.OpacityMask><RadialGradientBrush RadiusX="0.5" RadiusY="0.5"><GradientStop Color="White" Offset="0.75"/><GradientStop Color="#F0FFFFFF" Offset="0.93"/><GradientStop Color="#00FFFFFF" Offset="1"/></RadialGradientBrush></Grid.OpacityMask>
-                <Viewbox x:Name="VideoViewbox" Width="460.8" Height="259.2" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" IsHitTestVisible="False">
+                <Viewbox x:Name="VideoViewbox" Width="446.5777777778" Height="251.2" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0" IsHitTestVisible="False">
                     <wv:WebView2CompositionControl x:Name="Browser" Width="960" Height="540" DefaultBackgroundColor="Black" AllowExternalDrop="False"/>
                 </Viewbox>
                 <Rectangle x:Name="Film" IsHitTestVisible="False" Opacity="0.045"><Rectangle.Fill><DrawingBrush TileMode="Tile" Viewport="0,0,3,3" ViewportUnits="Absolute"><DrawingBrush.Drawing><GeometryDrawing Brush="Black" Geometry="M0,0 L3,0 3,0.5 0,0.5Z"/></DrawingBrush.Drawing></DrawingBrush></Rectangle.Fill></Rectangle>
@@ -66,8 +67,12 @@
                 <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="14"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><Path Data="M1,6 L4,6 8,2 8,14 4,10 1,10Z M10,5 Q14,8 10,11" Stroke="#C3DCE8" StrokeThickness="1" Width="12" Height="12" Stretch="Uniform" VerticalAlignment="Center"/><Slider x:Name="Volume" Grid.Column="1" Minimum="0" Maximum="100" Value="65" Style="{StaticResource ChromeFader}" VerticalAlignment="Center" ValueChanged="ChangeVolume" ToolTip="음량"/></Grid>
             </Border>
         </Canvas>
-        <Border x:Name="TransportBar" Canvas.Left="30" Canvas.Top="283" Width="400" Height="34" CornerRadius="10" BorderBrush="{StaticResource ChromeStroke}" BorderThickness="0.8" Background="{StaticResource SmokedGlass}" Padding="4,1">
-            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="28"/><ColumnDefinition Width="26"/><ColumnDefinition Width="9"/><ColumnDefinition Width="*"/><ColumnDefinition Width="26"/><ColumnDefinition Width="27"/></Grid.ColumnDefinitions>
+        <StackPanel x:Name="TransportGroup" Canvas.Left="30" Canvas.Top="299" Width="400">
+        <Border x:Name="TransportBar" Height="34" CornerRadius="10" BorderBrush="{StaticResource ChromeStroke}" BorderThickness="0.8" Background="{StaticResource ClearGlass}">
+            <Border.Effect><DropShadowEffect BlurRadius="2" ShadowDepth="1" Opacity="0.55"/></Border.Effect>
+            <Grid>
+            <Border Margin="2" CornerRadius="7" BorderBrush="#35E5F6FF" BorderThickness="0.6" IsHitTestVisible="False"/>
+            <Grid Margin="5,1"><Grid.ColumnDefinitions><ColumnDefinition Width="26"/><ColumnDefinition Width="28"/><ColumnDefinition Width="26"/><ColumnDefinition Width="9"/><ColumnDefinition Width="*"/><ColumnDefinition Width="26"/><ColumnDefinition Width="27"/></Grid.ColumnDefinitions>
                 <Button x:Name="Previous" Content="‹" Click="PreviousTrack" ToolTip="이전 영상" IsEnabled="False" FontSize="21" Padding="2"/>
                 <Button x:Name="Play" Content="▶" Grid.Column="1" Click="TogglePlayback" ToolTip="재생 / 일시정지" FontSize="11" Padding="2"/>
                 <Button x:Name="Next" Content="›" Grid.Column="2" Click="NextTrack" ToolTip="다음 영상" IsEnabled="False" FontSize="21" Padding="2"/>
@@ -76,9 +81,13 @@
                 <Button Content="↵" Grid.Column="5" Click="SubmitAddress" ToolTip="링크 재생" FontSize="14" Padding="2"/>
                 <Button x:Name="PlaylistButton" Content="≡" Grid.Column="6" Click="TogglePlaylist" ToolTip="재생목록" FontSize="18" Padding="2" IsEnabled="False"/>
             </Grid>
+            </Grid>
         </Border>
-        <TextBlock x:Name="TrackTitle" Canvas.Left="46" Canvas.Top="324" Width="367" Foreground="#D8E7F0" FontSize="10" TextTrimming="CharacterEllipsis" TextAlignment="Center"><TextBlock.Effect><DropShadowEffect BlurRadius="3" ShadowDepth="1" Opacity="1"/></TextBlock.Effect></TextBlock>
-        <Border x:Name="StatusBox" Canvas.Left="32" Canvas.Top="344" Width="396" CornerRadius="7" Background="#DE202832" Padding="7,5" Visibility="Collapsed"><TextBlock x:Name="StatusText" Foreground="#FFE4CA" FontSize="11" TextWrapping="Wrap" TextAlignment="Center"/></Border>
+        <Grid x:Name="PlaybackInfo" Margin="10,3,10,0">
+            <TextBlock x:Name="TrackTitle" Foreground="#D8E7F0" FontSize="10" TextTrimming="CharacterEllipsis" TextAlignment="Center"><TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers><DataTrigger Binding="{Binding Visibility, ElementName=StatusBox}" Value="Visible"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></TextBlock.Style><TextBlock.Effect><DropShadowEffect BlurRadius="3" ShadowDepth="1" Opacity="1"/></TextBlock.Effect></TextBlock>
+            <Border x:Name="StatusBox" Padding="3,0" Visibility="Collapsed"><TextBlock x:Name="StatusText" Foreground="#E4F2FB" FontSize="10.5" TextWrapping="Wrap" TextAlignment="Center"><TextBlock.Effect><DropShadowEffect BlurRadius="3" ShadowDepth="1" Opacity="1"/></TextBlock.Effect></TextBlock></Border>
+        </Grid>
+        </StackPanel>
         <Border x:Name="PlaylistPanel" Canvas.Left="42" Canvas.Top="71" Width="376" Height="204" CornerRadius="12" Background="#F0192936" BorderBrush="{StaticResource ChromeStroke}" BorderThickness="0.8" Padding="12" Visibility="Collapsed">
             <DockPanel><DockPanel DockPanel.Dock="Top" Height="27" Margin="0,0,0,7"><Button Content="×" DockPanel.Dock="Right" Width="24" Click="TogglePlaylist"/><TextBlock x:Name="PlaylistHeading" Text="재생목록" Foreground="#E1EFF7" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/></DockPanel>
                 <ListBox x:Name="PlaylistTracks" Background="Transparent" BorderThickness="0" Foreground="#D2E2ED" SelectionChanged="SelectPlaylistTrack" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
