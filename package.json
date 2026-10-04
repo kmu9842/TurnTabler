@@ -1,0 +1,12 @@
+{
+  "name": "turntabler",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Native Windows turntable widget (WPF + Windows WebView2)",
+  "scripts": {
+    "start": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start-native.ps1",
+    "test": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File build.ps1 -Test",
+    "test:desktop": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-native.ps1",
+    "dist": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File publish.ps1"
+  }
+}

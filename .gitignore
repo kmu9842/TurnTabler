@@ -1,0 +1,13 @@
+node_modules/
+release/
+*.log
+artifacts/
+.tools/
+native/bin/
+native/obj/
+.vs/
+*.user
+*.suo
+.env
+.env.*
+!.env.example
