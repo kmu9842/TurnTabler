@@ -4,7 +4,15 @@
 
 ## 실행
 
-[GitHub Releases](https://github.com/kmu9842/TurnTabler/releases/latest)에서 **TurnTabler.exe 하나만** 내려받아 실행하세요. 이미지와 재생 스크립트, .NET 런타임은 EXE에 포함됩니다.
+[1.0.0 배포](https://github.com/kmu9842/TurnTabler/releases/tag/v1.0.0)에서 **TurnTabler.exe**를 내려받아 실행하세요. 이미지와 재생 스크립트, .NET 런타임은 EXE에 포함됩니다.
+
+배포 첨부 파일은 다음 세 개입니다.
+
+- `TurnTabler.exe` — Windows 실행 파일
+- `TurnTabler-guide-ko.png` — 실제 프로그램 캡처로 만든 한 장 사용 가이드
+- `TurnTabler-Chrome-1.0.0.zip` — 선택 설치하는 Chrome 확장 프로그램
+
+![TurnTabler 사용 가이드](output/TurnTabler-guide-ko.png)
 
 Windows 10 2004 이상 / Windows 11의 x64 환경을 지원합니다. 영상은 Windows의 Microsoft Edge WebView2 Runtime을 사용합니다. WebView2가 없는 PC에는 [Microsoft 공식 런타임](https://developer.microsoft.com/microsoft-edge/webview2/)을 설치해야 합니다. 별도의 .NET 설치는 필요하지 않습니다.
 
@@ -28,7 +36,7 @@ Windows 10 2004 이상 / Windows 11의 x64 환경을 지원합니다. 영상은 
 
 ## Chrome에서 우클릭으로 재생
 
-**TurnTabler 2.1.2 이상**과 별도 설치 파일 **TurnTabler-Chrome-1.2.0.zip**을 사용합니다. 기존 배포 EXE를 그대로 지원하며 `release/v2.1.4/TurnTabler.exe`의 실제 재생으로 검증했습니다. EXE만 실행하면 브라우저 확장은 설치되지 않습니다.
+같이 배포된 **TurnTabler 1.0.0**과 **TurnTabler-Chrome-1.0.0.zip**을 사용합니다. EXE만 실행하면 브라우저 확장은 설치되지 않습니다.
 
 1. `TurnTabler.exe`를 사용할 폴더에 저장합니다.
 2. 확장 ZIP을 풀고 `Install.cmd`를 실행해 사용할 EXE를 선택합니다. 관리자 권한은 필요하지 않습니다.
@@ -61,11 +69,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-released-ap
 
 `build.ps1`은 개발용 파일을 `release/native`에 만들고, `publish.ps1`은 배포용 단일 EXE를 `release/single-file/TurnTabler.exe`에 만듭니다. 배포용 EXE를 실행하는 데 DLL·이미지·스크립트 파일을 함께 전달할 필요가 없습니다. 실행 시 내장 네이티브 라이브러리는 .NET의 임시 캐시에 풀립니다.
 
-`scripts/package-chrome.ps1 -Test`는 확장을 검사하고 연결 프로그램을 빌드하여 앱 EXE와 별도인 `release/TurnTabler-Chrome-1.2.0.zip`을 만듭니다. 연결 프로그램 빌드는 Windows .NET Framework 4.x C# 컴파일러를 사용합니다. `scripts/test-browser-integration.mjs`는 연결 기능이 추가된 앱 빌드의 Native Messaging과 두 영상의 실제 재생을 별도 프로필에서 확인합니다.
+`scripts/package-chrome.ps1 -Test`는 확장을 검사하고 연결 프로그램을 빌드하여 앱 EXE와 별도인 `release/TurnTabler-Chrome-1.0.0.zip`을 만듭니다. 연결 프로그램 빌드는 Windows .NET Framework 4.x C# 컴파일러를 사용합니다. `scripts/test-browser-integration.mjs`는 연결 기능이 추가된 앱 빌드의 Native Messaging과 두 영상의 실제 재생을 별도 프로필에서 확인합니다.
 
 `scripts/test-chrome.ps1`은 설치 패키지를 임시 폴더에 설치한 뒤 독립된 Chrome 프로필에 확장을 로드해 실제 유튜브 자체 메뉴 표시·재열기·재생성, 메뉴 클릭으로 앱 자동 실행·재생·창 재사용, 설정의 경로 변경·버전 표시·오류 처리·저장 유지, 연결 팝업과 제거를 검증합니다. 테스트가 끝나면 기존 Chrome 연결 등록을 복원합니다. 결과와 스크린샷은 `artifacts/chrome/`에 저장됩니다.
 
-`scripts/test-chrome-host.mjs`는 기존 2.1.2/2.1.4 배포 파일 확인, 잘못된 요청 거부와 EXE 이동 후 설정 복구를 검증합니다. `scripts/test-released-app.ps1`은 지정한 실제 배포 EXE에서 재생·숨김 복원·정상 종료 후 자동 실행을 확인합니다. 이 검증은 해당 앱을 실제로 조작하고 다시 실행하며, EXE 파일이 변경되지 않았는지도 확인합니다. 결과는 `artifacts/released-app/`에 저장됩니다.
+`scripts/test-chrome-host.mjs`는 1.0.0 배포 파일 확인, 잘못된 요청 거부와 EXE 이동 후 설정 복구를 검증합니다. `scripts/test-released-app.ps1`은 지정한 실제 배포 EXE에서 재생·숨김 복원·정상 종료 후 자동 실행을 확인합니다. 이 검증은 해당 앱을 실제로 조작하고 다시 실행하며, EXE 파일이 변경되지 않았는지도 확인합니다. 결과는 `artifacts/released-app/`에 저장됩니다.
 
 데스크톱 검증은 별도의 임시 프로필과 화면 밖 테스트 창을 사용하며, 요청받은 영상의 실제 재생, 이전·다음, 재생목록 직접 선택과 자동 다음 곡, CC 켜기·끄기 및 이동 후 유지, 볼륨, 회전/일시정지, 영상 중심, 받침대 밖 반사광 픽셀을 확인합니다. `publish.ps1 -Test`는 프로젝트 밖의 새 폴더에 EXE만 복사해서 동일한 검증을 실행합니다. 결과와 화면은 `artifacts/native` 또는 `artifacts/single-file`에 저장합니다.
 
@@ -73,4 +81,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-released-ap
 
 앱 구현과 리소스는 `native/`에 있습니다. 턴테이블 원본 이미지는 `native/Assets/glass-turntable.png`에 있으며 EXE에 포함됩니다. Chrome 확장은 `chrome-extension/`, 연결 프로그램은 `chrome-native-host/`, 빌드·검증 스크립트는 `scripts/`, 확장 단위 테스트는 `test/`에 있습니다.
 
-`artifacts/`는 테스트 결과, `native/bin/`과 `native/obj/`는 빌드 캐시입니다. `release/`의 개발용·단일 EXE·확장 패키지는 위 명령으로 다시 만들 수 있습니다. 단, Chrome 확장에 등록한 EXE와 기존 버전 호환성 테스트에 사용하는 `release/v2.1.2/TurnTabler.exe`, `release/v2.1.4/TurnTabler.exe`는 사용하는 동안 보존해야 합니다.
+`artifacts/`는 테스트 결과, `native/bin/`과 `native/obj/`는 빌드 캐시입니다. `release/`의 개발용·단일 EXE·확장 패키지는 위 명령으로 다시 만들 수 있습니다. Chrome 확장에 등록한 EXE는 사용하는 동안 해당 경로에 보존해야 합니다.
+
+가이드 이미지는 실제 앱의 캡처를 조합합니다. `build.ps1` 실행 후 `TURNTABLER_ARTIFACTS`를 `artifacts/guide-captures`의 절대 경로로 지정하고 `release/native/TurnTabler.exe --smoke`를 실행해 캡처합니다. Python과 Pillow가 설치된 환경에서 `python scripts/create-usage-guide.py`를 실행하면 `output/TurnTabler-guide-ko.png`를 다시 만듭니다.

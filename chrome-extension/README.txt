@@ -1,13 +1,12 @@
-TurnTabler Chrome 확장 프로그램 1.2.0
+TurnTabler Chrome 확장 프로그램 1.0.0
 
 TurnTabler.exe와 별도로 설치하는 선택 기능입니다.
-Windows 10/11 x64, Chrome 123 이상, TurnTabler 2.1.2 이상이 필요합니다.
-기존 배포 EXE를 그대로 지원합니다. release/v2.1.4/TurnTabler.exe로 검증했습니다.
+Windows 10/11 x64, Chrome 123 이상, 함께 배포된 TurnTabler 1.0.0을 사용합니다.
 
 설치
 1. TurnTabler.exe를 사용할 폴더에 저장합니다.
 2. 이 ZIP을 압축 해제하고 Install.cmd를 더블클릭합니다.
-3. 사용할 TurnTabler.exe를 선택합니다. 설치기가 파일 정보와 2.1.2 이상 여부를 확인합니다.
+3. 사용할 TurnTabler.exe를 선택합니다. 설치기가 파일 정보와 호환 여부를 확인합니다.
    앱을 실행하거나 바꾸지 않으며, 관리자 권한은 필요하지 않습니다.
 4. Chrome 주소창에 chrome://extensions 를 입력합니다.
 5. 오른쪽 위 '개발자 모드'를 켜고 '압축해제된 확장 프로그램을 로드합니다'를 누릅니다.
@@ -38,7 +37,7 @@ Windows 10/11 x64, Chrome 123 이상, TurnTabler 2.1.2 이상이 필요합니다
 
 업데이트 / 문제 해결
 - 확장을 업데이트하면 Install.cmd 실행 후 chrome://extensions의 새로고침을 누르고,
-  열려 있던 유튜브 탭도 새로고침합니다. 확장 버전이 1.2.0인지 확인하세요.
+  열려 있던 유튜브 탭도 새로고침합니다. 확장 버전이 1.0.0인지 확인하세요.
 - 이전에 ZIP 안의 extension 폴더를 직접 로드했다면, 새 ZIP의 extension 파일로
   해당 폴더를 갱신하거나 기존 확장을 제거하고 설치 안내의 폴더를 로드합니다.
 - 툴바의 ! 표시나 알림이 뜨면 아이콘을 눌러 연결을 확인합니다.

@@ -4,13 +4,17 @@ Add-Type -AssemblyName System.Windows.Forms
 
 if (-not $AppPath) {
     $dialog = New-Object System.Windows.Forms.OpenFileDialog
-    $dialog.Title = 'TurnTabler.exe (2.1.2+)'
+    $dialog.Title = 'TurnTabler.exe'
     $dialog.Filter = 'TurnTabler (TurnTabler.exe)|TurnTabler.exe'
     $dialog.CheckFileExists = $true
-    # Offer the newest adjacent release (including release/v2.1.4/TurnTabler.exe).
+    # Prefer the EXE shipped beside the extracted extension, then the current build.
     $releaseDirectory = Split-Path $PSScriptRoot -Parent
-    $candidate = Get-ChildItem -Path (Join-Path $releaseDirectory 'v*\TurnTabler.exe') -ErrorAction SilentlyContinue |
-        Sort-Object { [version]$_.VersionInfo.FileVersion } -Descending | Select-Object -First 1
+    $candidate = @(
+        (Join-Path $PSScriptRoot 'TurnTabler.exe'),
+        (Join-Path $releaseDirectory 'TurnTabler.exe'),
+        (Join-Path $releaseDirectory 'single-file\TurnTabler.exe')
+    ) | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
+    if ($candidate) { $candidate = Get-Item -LiteralPath $candidate }
     if ($candidate) { $dialog.InitialDirectory = $candidate.DirectoryName; $dialog.FileName = $candidate.FullName }
     try {
         if ($dialog.ShowDialog() -ne [System.Windows.Forms.DialogResult]::OK) { exit 0 }

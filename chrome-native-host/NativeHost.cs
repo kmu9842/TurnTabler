@@ -18,7 +18,7 @@ using System.Windows.Forms;
 
 [assembly: AssemblyTitle("TurnTabler Chrome Host")]
 [assembly: AssemblyProduct("TurnTabler Chrome Host")]
-[assembly: AssemblyVersion("1.2.0.0")]
+[assembly: AssemblyVersion("1.0.0.0")]
 internal static class NativeHost
 {
     internal const string ExtensionId = "ebnjhkdpohpgeipkalbfklpfibjadnhd";
@@ -52,7 +52,7 @@ internal static class NativeHost
                 case "choosePath":
                     using (var dialog = new OpenFileDialog())
                     {
-                        dialog.Title = "TurnTabler.exe 선택 (2.1.2 이상)";
+                        dialog.Title = "TurnTabler.exe 선택";
                         dialog.Filter = "TurnTabler (TurnTabler.exe)|TurnTabler.exe";
                         string previous = ConfiguredPath();
                         if (File.Exists(previous)) { dialog.InitialDirectory = Path.GetDirectoryName(previous); dialog.FileName = previous; }
@@ -102,7 +102,9 @@ internal static class NativeHost
         var info = FileVersionInfo.GetVersionInfo(path);
         var version = new Version(info.FileMajorPart, info.FileMinorPart, info.FileBuildPart, info.FilePrivatePart);
         if (info.ProductName != "TurnTabler" || info.OriginalFilename != "TurnTabler.dll") throw new ArgumentException("TurnTabler 배포 EXE가 아닙니다.");
-        if (version < new Version(2, 1, 2, 0)) throw new ArgumentException("TurnTabler 2.1.2 이상이 필요합니다. 선택한 파일: " + version);
+        // Public releases restart at 1.0.0; retain compatibility with supported legacy EXEs.
+        if (version.Major != 1 && version < new Version(2, 1, 2, 0))
+            throw new ArgumentException("TurnTabler 1.x 또는 기존 2.1.2 이상이 필요합니다. 선택한 파일: " + version);
         return new Dictionary<string, object> { { "ok", true }, { "protocol", 1 }, { "appPath", path }, { "appVersion", version.ToString() }, { "available", true } };
     }
     static object Settings()

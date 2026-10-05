@@ -37,9 +37,9 @@ function request(value, caller = origin, raw, onStart) {
   });
 }
 assert.equal((await request({ action: 'getSettings' })).available, false);
-const appPath = path.join(root, 'release/v2.1.4/TurnTabler.exe');
+const appPath = path.join(root, 'release/single-file/TurnTabler.exe');
 const saved = await request({ action: 'setPath', appPath });
-assert.ok(saved.ok && saved.available); assert.equal(saved.appVersion, '2.1.4.0');
+assert.ok(saved.ok && saved.available); assert.equal(saved.appVersion, '1.0.0.0');
 assert.equal((await request({ action: 'getSettings' })).appPath, appPath);
 let pickerClosed;
 const cancelled = await request({ action: 'choosePath' }, origin, undefined, appId => {
@@ -81,7 +81,7 @@ await rename(copy, copy + '.moved');
 const missing = await request({ action: 'getSettings' });
 assert.ok(missing.ok && !missing.available); assert.equal(missing.appPath, copy);
 assert.equal((await request({ action: 'setPath', appPath })).available, true);
-assert.equal((await request({ action: 'ping' })).appVersion, '2.1.4.0');
+assert.equal((await request({ action: 'ping' })).appVersion, '1.0.0.0');
 const oldPath = path.join(root, 'release/v2.1.2/TurnTabler.exe');
 if (await readFile(oldPath).then(() => true).catch(() => false)) {
   const old = await request({ action: 'setPath', appPath: oldPath });
@@ -89,5 +89,5 @@ if (await readFile(oldPath).then(() => true).catch(() => false)) {
 }
 await writeFile(path.join(output, 'result.json'), JSON.stringify({ success: true, appPath, version: saved.appVersion,
   invalidRequestsRejected: true, settingsPersist: true, movedPathRecovery: true, unicodePaths: true }, null, 2));
-console.log('PASS: released 2.1.2/2.1.4 validation, native message framing, allowlist, URL rejection, settings persistence, moved EXE recovery.');
+console.log('PASS: 1.0.0 release validation, native message framing, allowlist, URL rejection, settings persistence, moved EXE recovery.');
 console.log(output);

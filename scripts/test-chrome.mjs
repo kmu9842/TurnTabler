@@ -63,6 +63,9 @@ async function openYouTubeMenu(session) {
   const point = await until(() => evaluate(session, `(() => {
     const player = document.querySelector('#movie_player');
     if (!player?.querySelector('.ytp-chrome-controls')) return null;
+    // YouTube's loading surface can briefly cover a menu opened during navigation.
+    const video = player.querySelector('video');
+    if (!video || video.readyState < 2 || ![1, 2].includes(player.getPlayerState?.())) return null;
     const r = player.getBoundingClientRect(), x = r.x + Math.min(400, r.width / 2), y = r.y + Math.min(180, r.height / 2);
     const target = document.elementFromPoint(x, y);
     return r.width > 200 && r.height > 150 && player.contains(target) && !target?.closest('.ytp-contextmenu') ? {x, y} : null;
@@ -85,7 +88,12 @@ async function openYouTubeMenu(session) {
 
 async function clickYouTubeItem(session) {
   await evaluate(session, 'new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))');
-  const point = await evaluate(session, `(() => { const r = document.querySelector('.turntabler-youtube-item').getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
+  const point = await until(() => evaluate(session, `(() => {
+    const item = document.querySelector('.turntabler-youtube-item');
+    if (!item) return null;
+    const r = item.getBoundingClientRect(), x = r.x+r.width/2, y = r.y+r.height/2;
+    return r.height > 10 && document.elementFromPoint(x, y)?.closest('.turntabler-youtube-item') === item ? {x, y} : null;
+  })()`), 'YouTube menu row is visible and clickable', 15000);
   assert.ok(await evaluate(session, `!!document.elementFromPoint(${point.x}, ${point.y})?.closest('.turntabler-youtube-item')`), 'Menu row must be the visible click target');
   await mouse(session, point.x, point.y);
   await until(async () => {
@@ -137,10 +145,10 @@ try {
   await savePath('C:\\missing\\TurnTabler.exe');
   assert.equal(await evaluate(settings, "document.querySelector('#status').dataset.ok"), 'false');
   assert.equal((await native({ action: 'getSettings' })).appPath, initialSettings.appPath);
-  const releasedPath = path.resolve(import.meta.dirname, '../release/v2.1.4/TurnTabler.exe');
+  const releasedPath = path.resolve(import.meta.dirname, '../release/single-file/TurnTabler.exe');
   await savePath(releasedPath);
   assert.equal(await evaluate(settings, "document.querySelector('#status').dataset.ok"), 'true');
-  assert.match(await evaluate(settings, "document.querySelector('#version').textContent"), /2\.1\.4\.0/);
+  assert.match(await evaluate(settings, "document.querySelector('#version').textContent"), /1\.0\.0\.0/);
   assert.equal((await native({ action: 'getSettings' })).appPath, releasedPath);
   await command('Page.reload', {}, settings);
   await until(() => evaluate(settings, "document.querySelector('#status')?.dataset.ok === 'true'"), 'settings persisted after reload');
@@ -149,7 +157,7 @@ try {
   await writeFile(path.join(output, 'extension-settings.png'), Buffer.from(optionsScreenshot.data, 'base64'));
   await savePath(initialSettings.appPath);
   await command('Target.closeTarget', { targetId: settingsPage.targetId });
-  console.log('PASS: real Chrome settings path change to distributed 2.1.4, version display, invalid path rejection and reload persistence');
+  console.log('PASS: real Chrome settings path change to distributed 1.0.0, version display, invalid path rejection and reload persistence');
   const youtube = await command('Target.createTarget', { url: 'about:blank' });
   youtubeSession = (await command('Target.attachToTarget', { targetId: youtube.targetId, flatten: true })).sessionId;
   await command('Page.enable', {}, youtubeSession);

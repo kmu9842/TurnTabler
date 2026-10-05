@@ -1,4 +1,4 @@
-param([string]$AppPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'release\v2.1.4\TurnTabler.exe'))
+param([string]$AppPath = (Join-Path (Split-Path $PSScriptRoot -Parent) 'release\single-file\TurnTabler.exe'))
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
 Add-Type -AssemblyName UIAutomationTypes

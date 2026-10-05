@@ -1,6 +1,6 @@
 {
   "name": "turntabler",
-  "version": "2.1.5",
+  "version": "1.0.0",
   "private": true,
   "description": "Native Windows turntable widget (WPF + Windows WebView2)",
   "scripts": {
