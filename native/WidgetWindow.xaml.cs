@@ -64,6 +64,7 @@ public partial class WidgetWindow : Window
         catch { preferences = new(); }
         preferences.Volume = Math.Clamp(preferences.Volume, 0, 100);
         preferences.VideoOpacity = Math.Clamp(preferences.VideoOpacity, 0, 100);
+        preferences.LightStrength = Math.Clamp(preferences.LightStrength, 0, 100);
         preferences.Size = Math.Clamp(preferences.Size, 0, 2);
         InitializeComponent();
         var artwork = Artwork.Load(); GlassBody.Source = artwork.Body; RecordTexture.Source = artwork.Record; GrooveHighlights.Source = artwork.Highlights; Tonearm.Source = artwork.Tonearm;
@@ -75,10 +76,6 @@ public partial class WidgetWindow : Window
         Address.Text = preferences.Url;
         Volume.Value = Program.Smoke ? 0 : preferences.Volume;
         CaptionsButton.IsChecked = preferences.Captions;
-        PinOption.IsChecked = preferences.Pin; RotationOption.IsChecked = preferences.Rotation;
-        EffectOption.IsChecked = preferences.Effect; AmbientOption.IsChecked = preferences.Ambient;
-        LightStrength.Value = Math.Clamp(preferences.LightStrength, 0, 100);
-        SizeOption.SelectedIndex = preferences.Size;
         initialized = true;
         ApplyOptions(); SetSize();
         if (Program.Smoke) { Left = -10000; Top = -10000; Topmost = false; }
@@ -86,7 +83,7 @@ public partial class WidgetWindow : Window
         tray.DoubleClick += (_, _) => Dispatcher.Invoke(ShowWidget);
         tray.ContextMenuStrip = new Forms.ContextMenuStrip();
         tray.ContextMenuStrip.Items.Add("위젯 표시", null, (_, _) => Dispatcher.Invoke(ShowWidget));
-        tray.ContextMenuStrip.Items.Add("옵션", null, (_, _) => Dispatcher.Invoke(ShowTrayOptions));
+        tray.ContextMenuStrip.Items.Add("설정", null, (_, _) => Dispatcher.Invoke(ShowSettings));
         tray.ContextMenuStrip.Items.Add("종료", null, (_, _) => Dispatcher.Invoke(Close));
         CompositionTarget.Rendering += Animate;
         visualTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(320) };
@@ -114,9 +111,9 @@ public partial class WidgetWindow : Window
         Closed += (_, _) =>
         {
             closing = true; Save(); visualTimer.Stop(); CompositionTarget.Rendering -= Animate;
-            trayOptionsWindow?.Close(); pageWindow?.Close(); Browser.Dispose(); tray.Dispose(); appTrayIcon.Dispose();
+            settingsWindow?.Close(); pageWindow?.Close(); Browser.Dispose(); tray.Dispose(); appTrayIcon.Dispose();
         };
-        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { SettingsPanel.Visibility = Visibility.Collapsed; PlaylistPanel.Visibility = Visibility.Collapsed; } };
+        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { settingsWindow?.Close(); PlaylistPanel.Visibility = Visibility.Collapsed; } };
     }
 
     private async Task InitializeBrowser()
@@ -226,7 +223,7 @@ public partial class WidgetWindow : Window
             playing = false; videoAvailable = false; ApplyVideoOpacity(); Previous.IsEnabled = Next.IsEnabled = false;
             preferences.Url = uri.AbsoluteUri; Save();
             Browser.CoreWebView2.Navigate(uri.AbsoluteUri);
-            SettingsPanel.Visibility = Visibility.Collapsed;
+            settingsWindow?.Close();
             PlaylistPanel.Visibility = Visibility.Collapsed;
         }
         catch (ArgumentException error) { Notice(error.Message); if (propagateErrors) throw; }
@@ -288,7 +285,7 @@ public partial class WidgetWindow : Window
     private void TogglePlaylist(object sender, RoutedEventArgs e)
     {
         e.Handled = true;
-        SettingsPanel.Visibility = Visibility.Collapsed;
+        settingsWindow?.Close();
         PlaylistPanel.Visibility = PlaylistPanel.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
         if (PlaylistPanel.Visibility == Visibility.Visible && PlaylistTracks.SelectedItem != null)
             PlaylistTracks.ScrollIntoView(PlaylistTracks.SelectedItem);
@@ -339,17 +336,7 @@ public partial class WidgetWindow : Window
         catch (Exception) when (!closing) { }
         finally { sampling = false; }
     }
-    private void ToggleSettings(object sender, RoutedEventArgs e) { e.Handled = true; PlaylistPanel.Visibility = Visibility.Collapsed; SettingsPanel.Visibility = SettingsPanel.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible; }
-    private void OptionsChanged(object sender, RoutedEventArgs e)
-    {
-        if (!initialized) return;
-        preferences.Pin = PinOption.IsChecked == true; preferences.Rotation = RotationOption.IsChecked == true;
-        preferences.Effect = EffectOption.IsChecked == true; preferences.Ambient = AmbientOption.IsChecked == true;
-        ApplyOptions(); Save();
-    }
-    private void ApplyOptions() { Topmost = preferences.Pin; Film.Visibility = preferences.Effect ? Visibility.Visible : Visibility.Collapsed; Ambient.Visibility = preferences.Ambient ? Visibility.Visible : Visibility.Collapsed; Ambient.Opacity = preferences.LightStrength / 100; }
-    private void LightStrengthChanged(object sender, RoutedPropertyChangedEventArgs<double> e) { if (!initialized) return; preferences.LightStrength = LightStrength.Value; Ambient.Opacity = preferences.LightStrength / 100; Save(); }
-    private void WidgetSizeChanged(object sender, SelectionChangedEventArgs e) { if (!initialized) return; preferences.Size = SizeOption.SelectedIndex; SetSize(); Dock(); Save(); }
+    private void ApplyOptions() { Topmost = preferences.Pin; if (settingsWindow != null) settingsWindow.Topmost = preferences.Pin; Film.Visibility = preferences.Effect ? Visibility.Visible : Visibility.Collapsed; Ambient.Visibility = preferences.Ambient ? Visibility.Visible : Visibility.Collapsed; Ambient.Opacity = preferences.LightStrength / 100; }
     private void SetSize() { double scale = new[] { .8, 1, 1.2 }[preferences.Size]; Width = 460 * scale; Height = 390 * scale; WidgetScale.Width = Width; WidgetScale.Height = Height; }
     private Rect WorkArea()
     {
@@ -367,7 +354,7 @@ public partial class WidgetWindow : Window
         while (target != null && target != Deck) { if (target is System.Windows.Controls.Primitives.ButtonBase || target is Slider) return; target = VisualTreeHelper.GetParent(target); }
         try { DragMove(); preferences.Left = Left; preferences.Top = Top; Save(); } catch (InvalidOperationException) { }
     }
-    private void HideWidget(object sender, RoutedEventArgs e) { SettingsPanel.Visibility = Visibility.Collapsed; Hide(); }
+    private void HideWidget(object sender, RoutedEventArgs e) { settingsWindow?.Close(); Hide(); }
     private void ShowWidget() { Show(); WindowState = WindowState.Normal; Activate(); }
     private void CloseWidget(object sender, RoutedEventArgs e) => Close();
     private void Save()
@@ -381,7 +368,7 @@ public partial class WidgetWindow : Window
     {
         if (pageWindow != null) { pageWindow.Activate(); return; }
         if (!browserReady || string.IsNullOrEmpty(Browser.CoreWebView2.Source) || Browser.CoreWebView2.Source == "about:blank") { Notice("먼저 유튜브 링크를 입력해 주세요."); return; }
-        SettingsPanel.Visibility = Visibility.Collapsed;
+        settingsWindow?.Close();
         await Execute("window.turntablerNative?.setWidgetMode(false)");
         VideoViewbox.Child = null;
         Browser.Width = double.NaN; Browser.Height = double.NaN;
@@ -473,8 +460,8 @@ public partial class WidgetWindow : Window
             Volume.Value = 23;
             await Until(() => lastState.GetProperty("volume").GetInt32() == 23, "볼륨 반영");
             Volume.Value = 0;
-            SettingsPanel.Visibility = Visibility.Visible; await Task.Delay(200); Capture("settings");
-            SettingsPanel.Visibility = Visibility.Collapsed;
+            SettingsButton.RaiseEvent(new RoutedEventArgs(Button.ClickEvent)); await Task.Delay(200); Capture("settings");
+            settingsWindow!.Close();
             await Execute("window.turntablerNative.play()"); await Until(() => playing, "재생 재개");
             await Until(() => lastState.GetProperty("playlistCount").GetInt32() > 1 && Next.IsEnabled, "믹스 목록 불러오기");
             if (PlaylistTracks.Items.Count < 2 || !PlaylistButton.IsEnabled) throw new Exception("위젯 재생목록을 표시하지 못함");
