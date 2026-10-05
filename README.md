@@ -46,7 +46,7 @@ EXE 위치를 옮겼다면 확장 아이콘의 **설정 · EXE 경로 변경**�
 
 ## 빌드와 검증
 
-.NET 8 SDK를 사용합니다. `.tools/dotnet/dotnet.exe`가 있으면 해당 SDK를 우선 사용합니다.
+.NET 8 SDK를 사용합니다. `.tools/dotnet/dotnet.exe`가 있으면 해당 SDK를 우선 사용합니다. Chrome 확장 테스트와 `npm.cmd` 명령에는 Node.js가 필요하며, 외부 npm 패키지는 사용하지 않으므로 `npm install`은 필요하지 않습니다.
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File build.ps1 -Test
@@ -71,4 +71,6 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-released-ap
 
 앱 아이콘은 Forge에서 비공개로 생성하고 로컬로 내려받았습니다. 원본 PNG와 Windows용 ICO는 `native/Assets/Icon/`에, 생성 프롬프트·모델·비공개 확인 기록은 같은 폴더의 `provenance.json`에 있습니다. `scripts/package-icon.ps1`은 원본 이미지를 표준 아이콘 크기로 변환해 ICO를 다시 만듭니다.
 
-현재 구현은 `native/`에 있습니다. 루트의 이전 `.cjs` 파일과 `ui`의 웹 화면 코드는 실행에 사용하지 않으며, `ui/assets/glass-turntable.png`의 기존 레코드 이미지는 그대로 재사용합니다.
+앱 구현과 리소스는 `native/`에 있습니다. 턴테이블 원본 이미지는 `native/Assets/glass-turntable.png`에 있으며 EXE에 포함됩니다. Chrome 확장은 `chrome-extension/`, 연결 프로그램은 `chrome-native-host/`, 빌드·검증 스크립트는 `scripts/`, 확장 단위 테스트는 `test/`에 있습니다.
+
+`artifacts/`는 테스트 결과, `native/bin/`과 `native/obj/`는 빌드 캐시입니다. `release/`의 개발용·단일 EXE·확장 패키지는 위 명령으로 다시 만들 수 있습니다. 단, Chrome 확장에 등록한 EXE와 기존 버전 호환성 테스트에 사용하는 `release/v2.1.2/TurnTabler.exe`, `release/v2.1.4/TurnTabler.exe`는 사용하는 동안 보존해야 합니다.

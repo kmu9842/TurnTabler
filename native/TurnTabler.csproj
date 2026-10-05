@@ -14,7 +14,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
-    <EmbeddedResource Include="../ui/assets/glass-turntable.png" LogicalName="TurnTabler.Assets.Record.png" />
+    <EmbeddedResource Include="Assets/glass-turntable.png" LogicalName="TurnTabler.Assets.Record.png" />
     <EmbeddedResource Include="YouTubeBridge.js" LogicalName="TurnTabler.Assets.YouTubeBridge.js" />
     <EmbeddedResource Include="Assets/Icon/TurnTabler.ico" LogicalName="TurnTabler.Assets.App.ico" />
   </ItemGroup>
