@@ -13,10 +13,12 @@
 - `TurnTabler.exe` — Windows 실행 파일
 - `TurnTabler-Chrome-1.1.0.zip` — Windows에서 선택 설치하는 Chrome 확장 프로그램
 - `TurnTabler-macOS-1.1.0-universal.zip` — Mac 미리보기 앱과 Chrome 연결 도구
+- `TurnTabler-guide-ko.png` — 1.1.0 변경점과 사용법 이미지
+- `TurnTabler-OBS-guide-ko.png` — OBS 직접 오디오 연결 가이드 이미지
 
-![TurnTabler 사용 가이드](output/TurnTabler-guide-ko.png)
+![TurnTabler 1.1.0 변경점과 사용 가이드](output/TurnTabler-guide-ko.png)
 
-위 가이드 이미지는 1.0.0 기준입니다. 1.1.0의 브라우저·출력 장치·OBS 기능은 아래 안내를 참고하세요.
+[변경점 가이드 원본 받기](https://github.com/kmu9842/TurnTabler/releases/download/v1.1.0/TurnTabler-guide-ko.png) · [OBS 연결 가이드 원본 받기](https://github.com/kmu9842/TurnTabler/releases/download/v1.1.0/TurnTabler-OBS-guide-ko.png)
 
 Windows 10 2004 이상 / Windows 11의 x64 환경을 지원합니다. 영상은 Windows의 Microsoft Edge WebView2 Runtime을 사용합니다. WebView2가 없는 PC에는 [Microsoft 공식 런타임](https://developer.microsoft.com/microsoft-edge/webview2/)을 설치해야 합니다. 별도의 .NET 설치는 필요하지 않습니다.
 
@@ -51,6 +53,8 @@ Windows용 OBS 직접 스트림과 일부 시각 효과 설정은 Mac 미리보�
 설정과 마지막 링크는 `%LOCALAPPDATA%/TurnTablerNative`에 저장됩니다. 평소 실행 시 마지막 링크를 자동 재생하지 않습니다.
 
 ## OBS 소리 연결 (Windows 11)
+
+![TurnTabler 1.1.0 OBS 직접 오디오 연결 가이드](output/TurnTabler-OBS-guide-ko.png)
 
 설정에서 **OBS로 소리 보내기**를 켠 뒤 **OBS 연결 주소 복사**를 누릅니다. OBS의 미디어 소스에서 ‘로컬 파일’을 해제하고 입력에 붙여넣습니다. 입력 형식은 `wav`, FFmpeg 옵션은 `ignore_length=1 analyzeduration=0 probesize=4096`입니다. 소스가 비활성일 때 파일을 닫는 옵션은 끄고 재연결 지연은 1초로 두면 앱 재실행 후에도 같은 소스로 다시 연결됩니다.
 
