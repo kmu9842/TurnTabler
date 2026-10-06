@@ -1,6 +1,6 @@
 {
   "name": "turntabler",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "description": "Native Windows turntable widget (WPF + Windows WebView2)",
   "scripts": {
@@ -9,7 +9,8 @@
     "test:desktop": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-native.ps1",
     "dist": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File publish.ps1",
     "dist:chrome": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/package-chrome.ps1 -Test",
-    "test:chrome": "node --test test/chrome-extension.test.mjs",
+    "test:chrome": "node --test test/chrome-extension.test.mjs test/playback-bridge.test.mjs",
+    "test:obs": "node scripts/test-obs.mjs",
     "test:chrome:desktop": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-chrome.ps1",
     "test:chrome:host": "node scripts/test-chrome-host.mjs",
     "test:chrome:release": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-released-app.ps1",

@@ -1,0 +1,58 @@
+name: Build desktop apps
+on:
+  workflow_dispatch:
+  push:
+    branches: [release/1.1.0]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node --test test/chrome-extension.test.mjs test/playback-bridge.test.mjs
+      - name: Build and test Windows app
+        shell: pwsh
+        run: |
+          ./publish.ps1
+          $app = (Resolve-Path release/single-file/TurnTabler.exe).Path
+          $test = Start-Process -FilePath $app -ArgumentList '--self-test' -PassThru -Wait -WindowStyle Hidden
+          if ($test.ExitCode -ne 0) { throw 'Windows self-test failed' }
+          $artwork = Join-Path $PWD 'artifacts/mac-artwork'
+          $export = Start-Process $app -ArgumentList '--export-artwork',$artwork -PassThru -Wait -WindowStyle Hidden
+          if ($export.ExitCode -ne 0) { throw 'Artwork export failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Windows
+          path: release/single-file/TurnTabler.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shared-artwork
+          path: artifacts/mac-artwork/*.png
+  macos:
+    needs: windows
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: Shared-artwork
+          path: artifacts/mac-artwork
+      - run: bash macos/build.sh
+      - name: WebKit smoke test
+        run: |
+          mkdir -p artifacts/mac-smoke
+          TURNTABLER_ARTIFACTS="$PWD/artifacts/mac-smoke" release/macos/TurnTabler.app/Contents/MacOS/TurnTabler --smoke
+          cat artifacts/mac-smoke/mac-smoke.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macOS
+          path: |
+            release/macos/*.zip
+            artifacts/mac-smoke/*.json

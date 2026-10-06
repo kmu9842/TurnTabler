@@ -8,6 +8,17 @@ namespace TurnTabler;
 
 internal static class Artwork
 {
+    internal static int Export(string directory)
+    {
+        Directory.CreateDirectory(directory);
+        var layers = Load();
+        foreach (var item in new[] { ("body", layers.Body), ("record", layers.Record), ("highlights", layers.Highlights), ("tonearm", layers.Tonearm) })
+        {
+            var png = new PngBitmapEncoder(); png.Frames.Add(BitmapFrame.Create(item.Item2));
+            using var output = File.Create(Path.Combine(directory, item.Item1 + ".png")); png.Save(output);
+        }
+        return 0;
+    }
     internal static (BitmapSource Body, BitmapSource Record, BitmapSource Highlights, BitmapSource Tonearm) Load()
     {
         var source = new BitmapImage();

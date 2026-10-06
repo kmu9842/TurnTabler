@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleIdentifier</key><string>com.turntabler.player</string>
+  <key>CFBundleName</key><string>TurnTabler</string>
+  <key>CFBundleDisplayName</key><string>TurnTabler</string>
+  <key>CFBundleExecutable</key><string>TurnTabler</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>1.1.0</string>
+  <key>CFBundleVersion</key><string>1.1.0</string>
+  <key>CFBundleIconFile</key><string>TurnTabler</string>
+  <key>LSMinimumSystemVersion</key><string>15.4</string>
+  <key>LSUIElement</key><true/>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>NSMicrophoneUsageDescription</key><string>WebKit에서 출력 스피커 목록을 가져오려면 마이크 권한이 필요합니다. 마이크 트랙은 즉시 해제하며 녹음하지 않습니다.</string>
+  <key>CFBundleURLTypes</key><array><dict><key>CFBundleURLName</key><string>TurnTabler YouTube handoff</string><key>CFBundleURLSchemes</key><array><string>turntabler</string></array></dict></array>
+</dict></plist>

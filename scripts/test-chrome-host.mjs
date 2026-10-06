@@ -4,6 +4,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 
 const root = path.resolve(import.meta.dirname, '..');
+const expectedVersion = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8')).version + '.0';
 await mkdir(path.join(root, 'artifacts/chrome-host'), { recursive: true });
 const output = await mkdtemp(path.join(root, 'artifacts/chrome-host/run-'));
 const host = path.join(output, 'TurnTabler.ChromeHost.exe');
@@ -39,7 +40,7 @@ function request(value, caller = origin, raw, onStart) {
 assert.equal((await request({ action: 'getSettings' })).available, false);
 const appPath = path.join(root, 'release/single-file/TurnTabler.exe');
 const saved = await request({ action: 'setPath', appPath });
-assert.ok(saved.ok && saved.available); assert.equal(saved.appVersion, '1.0.0.0');
+assert.ok(saved.ok && saved.available); assert.equal(saved.appVersion, expectedVersion);
 assert.equal((await request({ action: 'getSettings' })).appPath, appPath);
 let pickerClosed;
 const cancelled = await request({ action: 'choosePath' }, origin, undefined, appId => {
@@ -81,7 +82,7 @@ await rename(copy, copy + '.moved');
 const missing = await request({ action: 'getSettings' });
 assert.ok(missing.ok && !missing.available); assert.equal(missing.appPath, copy);
 assert.equal((await request({ action: 'setPath', appPath })).available, true);
-assert.equal((await request({ action: 'ping' })).appVersion, '1.0.0.0');
+assert.equal((await request({ action: 'ping' })).appVersion, expectedVersion);
 const oldPath = path.join(root, 'release/v2.1.2/TurnTabler.exe');
 if (await readFile(oldPath).then(() => true).catch(() => false)) {
   const old = await request({ action: 'setPath', appPath: oldPath });
@@ -89,5 +90,5 @@ if (await readFile(oldPath).then(() => true).catch(() => false)) {
 }
 await writeFile(path.join(output, 'result.json'), JSON.stringify({ success: true, appPath, version: saved.appVersion,
   invalidRequestsRejected: true, settingsPersist: true, movedPathRecovery: true, unicodePaths: true }, null, 2));
-console.log('PASS: 1.0.0 release validation, native message framing, allowlist, URL rejection, settings persistence, moved EXE recovery.');
+console.log('PASS: current release validation, native message framing, allowlist, URL rejection, settings persistence, moved EXE recovery.');
 console.log(output);

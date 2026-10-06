@@ -62,7 +62,20 @@ public partial class WidgetWindow
         window.ExitButton.Click += CloseWidget;
         window.Closed += (_, _) => settingsWindow = null;
         settingsWindow = window;
+        window.ObsOption.IsChecked = preferences.ObsEnabled;
+        window.ObsOption.Click += (_, _) => { preferences.ObsEnabled = window.ObsOption.IsChecked == true; Save(); UpdateObsOutput(); };
+        window.CopyObsAddress.Click += (_, _) => CopyObsAddress();
+        RefreshObsSettings();
+        window.AudioOutput.SelectionChanged += async (_, _) =>
+        {
+            if (updatingOutputs || window.AudioOutput.SelectedItem is not AudioOutputDevice device) return;
+            window.AudioOutputStatus.Text = "출력 장치를 적용하는 중…";
+            await Execute("window.turntablerNative?.setAudioOutput(" + System.Text.Json.JsonSerializer.Serialize(device.Id) + ")");
+        };
+        window.RefreshOutputsButton.Click += async (_, _) => await RefreshAudioOutputs();
+        UpdateAudioOutputList();
         window.Show();
+        _ = RefreshAudioOutputs();
         window.VideoOpacity.Focus();
     }
 }

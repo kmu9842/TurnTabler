@@ -15,12 +15,15 @@ internal static class Program
     // Chrome supplies its own host arguments; the test runner scopes this environment
     // variable to an isolated browser process and its children.
     internal static bool BrowserSmoke => Arguments.Contains("--browser-smoke") || Environment.GetEnvironmentVariable("TURNTABLER_BROWSER_SMOKE") == "1";
-    internal static bool Smoke => Arguments.Contains("--smoke") || BrowserSmoke;
+    internal static bool InteractionSmoke => Arguments.Contains("--interaction-smoke");
+    internal static bool ObsSmoke => Arguments.Contains("--obs-smoke");
+    internal static bool Smoke => Arguments.Contains("--smoke") || BrowserSmoke || InteractionSmoke || ObsSmoke;
 
     [STAThread]
     public static int Main(string[] args)
     {
         Arguments = args;
+        if (args.Length == 2 && args[0] == "--export-artwork") return Artwork.Export(args[1]);
         if (args.Contains("--self-test")) return SelfTests.Run();
         if (args.Contains("--browser-bridge-info"))
         {
@@ -30,7 +33,7 @@ internal static class Program
         }
         if (args.Length > 0 && args[0].StartsWith("chrome-extension://", StringComparison.Ordinal))
             return BrowserIntegration.RunHost(args[0]).GetAwaiter().GetResult();
-        if (Smoke) DataDirectory = Path.Combine(Path.GetTempPath(), BrowserSmoke ? "TurnTablerNative-BrowserSmoke" : "TurnTablerNative-Smoke");
+        if (Smoke) DataDirectory = Path.Combine(Path.GetTempPath(), ObsSmoke ? "TurnTablerNative-ObsSmoke" : InteractionSmoke ? "TurnTablerNative-InteractionSmoke" : BrowserSmoke ? "TurnTablerNative-BrowserSmoke" : "TurnTablerNative-Smoke");
         Directory.CreateDirectory(DataDirectory);
         using var instance = new Mutex(true, BrowserSmoke ? "Local\\TurnTablerNative-BrowserSmoke" : Smoke ? "Local\\TurnTablerNative-Smoke" : "Local\\TurnTablerNative", out bool first);
         if (!first)

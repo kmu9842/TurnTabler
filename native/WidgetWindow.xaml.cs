@@ -34,6 +34,9 @@ public partial class WidgetWindow : Window
         public int Size { get; set; } = 1;
         public double? Left { get; set; }
         public double? Top { get; set; }
+        public string OutputDevice { get; set; } = "";
+        public bool ObsEnabled { get; set; }
+        public string ObsToken { get; set; } = "";
     }
 
     private readonly Preferences preferences;
@@ -45,7 +48,8 @@ public partial class WidgetWindow : Window
     private bool ambientLayer;
     private int ambientFrames;
     private const double RevolutionSeconds = 24;
-    private Window? pageWindow;
+    private bool pageOpen, openingPage, closePageRequested;
+    private Rect widgetBounds;
     private string lastUrl = "", lastError = "";
     private string currentVideoId = "", currentVideoUrl = "";
     private readonly Stack<string> previousVideos = new();
@@ -67,6 +71,7 @@ public partial class WidgetWindow : Window
         preferences.LightStrength = Math.Clamp(preferences.LightStrength, 0, 100);
         preferences.Size = Math.Clamp(preferences.Size, 0, 2);
         InitializeComponent();
+        if (Program.ObsSmoke) Title = "TurnTabler verification";
         var artwork = Artwork.Load(); GlassBody.Source = artwork.Body; RecordTexture.Source = artwork.Record; GrooveHighlights.Source = artwork.Highlights; Tonearm.Source = artwork.Tonearm;
         using (var iconStream = BundledAssets.Open("App.ico"))
             Icon = BitmapFrame.Create(iconStream, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
@@ -84,7 +89,7 @@ public partial class WidgetWindow : Window
         tray.ContextMenuStrip = new Forms.ContextMenuStrip();
         tray.ContextMenuStrip.Items.Add("위젯 표시", null, (_, _) => Dispatcher.Invoke(ShowWidget));
         tray.ContextMenuStrip.Items.Add("설정", null, (_, _) => Dispatcher.Invoke(ShowSettings));
-        tray.ContextMenuStrip.Items.Add("종료", null, (_, _) => Dispatcher.Invoke(Close));
+        tray.ContextMenuStrip.Items.Add("종료", null, (_, _) => Dispatcher.Invoke(() => CloseWidget(this, new RoutedEventArgs())));
         CompositionTarget.Rendering += Animate;
         visualTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(320) };
         visualTimer.Tick += async (_, _) => await ReflectVideo();
@@ -100,7 +105,9 @@ public partial class WidgetWindow : Window
                 Top = Math.Clamp(Top, area.Top, Math.Max(area.Top, area.Bottom - Height));
             }
             await InitializeBrowser();
-            if (Program.BrowserSmoke) await BrowserSmokeChecks();
+            if (Program.ObsSmoke) await ObsSmokeChecks();
+            else if (Program.InteractionSmoke) await InteractionSmokeChecks();
+            else if (Program.BrowserSmoke) await BrowserSmokeChecks();
             else if (Program.Smoke) await SmokeChecks();
             else
             {
@@ -111,17 +118,18 @@ public partial class WidgetWindow : Window
         Closed += (_, _) =>
         {
             closing = true; Save(); visualTimer.Stop(); CompositionTarget.Rendering -= Animate;
-            settingsWindow?.Close(); pageWindow?.Close(); Browser.Dispose(); tray.Dispose(); appTrayIcon.Dispose();
+            settingsWindow?.Close(); obsAudio?.Dispose(); Browser.Dispose(); tray.Dispose(); appTrayIcon.Dispose();
         };
-        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape) { settingsWindow?.Close(); PlaylistPanel.Visibility = Visibility.Collapsed; } };
+        Closing += (_, e) => { if (pageOpen && !closing) { e.Cancel = true; CloseYouTubePage(this, new RoutedEventArgs()); } };
+        PreviewKeyDown += (_, e) => { if (e.Key == Key.Escape && !pageOpen) { settingsWindow?.Close(); PlaylistPanel.Visibility = Visibility.Collapsed; } };
     }
 
     private async Task InitializeBrowser()
     {
         try
         {
-            var environment = await CoreWebView2Environment.CreateAsync(null, Path.Combine(Program.DataDirectory, "WebView2"),
-                new CoreWebView2EnvironmentOptions("--autoplay-policy=no-user-gesture-required"));
+            string browserArguments = "--autoplay-policy=no-user-gesture-required";
+            var environment = await CoreWebView2Environment.CreateAsync(null, Path.Combine(Program.DataDirectory, "WebView2"), new CoreWebView2EnvironmentOptions(browserArguments));
             await Browser.EnsureCoreWebView2Async(environment);
             var core = Browser.CoreWebView2;
             core.Settings.AreDefaultContextMenusEnabled = true;
@@ -130,11 +138,22 @@ public partial class WidgetWindow : Window
             core.Settings.IsZoomControlEnabled = false;
             core.Settings.AreBrowserAcceleratorKeysEnabled = false;
             core.PermissionRequested += (_, e) => e.State = CoreWebView2PermissionState.Deny;
+            // Grant only output selection, scoped to YouTube; never microphone access.
+            try
+            {
+                await core.CallDevToolsProtocolMethodAsync("Browser.setPermission", "{\"permission\":{\"name\":\"speaker-selection\"},\"setting\":\"granted\",\"origin\":\"https://www.youtube.com\"}");
+                outputSelectionAvailable = true;
+            }
+            catch (Exception error) { LogPlayback("audio-permission", error.Message); }
             core.NewWindowRequested += (_, e) =>
             {
                 e.Handled = true;
                 if (Uri.TryCreate(e.Uri, UriKind.Absolute, out var uri) && uri.Scheme == "https")
-                    Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+                {
+                    if (uri.Host == "accounts.google.com" || uri.Host == "www.youtube.com" || uri.Host == "consent.youtube.com" || uri.Host == "consent.google.com")
+                        core.Navigate(uri.AbsoluteUri);
+                    else Process.Start(new ProcessStartInfo(uri.AbsoluteUri) { UseShellExecute = true });
+                }
             };
             core.NavigationStarting += (_, e) =>
             {
@@ -146,14 +165,16 @@ public partial class WidgetWindow : Window
             core.NavigationCompleted += async (_, e) =>
             {
                 if (!e.IsSuccess) { playing = false; Notice("유튜브 페이지를 열지 못했습니다: " + e.WebErrorStatus); return; }
-                await Execute("window.turntablerNative?.setVolume(" + Volume.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "); window.turntablerNative?.setWidgetMode(" + (pageWindow == null ? "true" : "false") + ")");
+                await Execute("window.turntablerNative?.setVolume(" + Volume.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "); window.turntablerNative?.setWidgetMode(" + (!pageOpen ? "true" : "false") + ")");
                 await Execute("window.turntablerNative?.setCaptions(" + (preferences.Captions ? "true" : "false") + ")");
+                await Execute("window.turntablerNative?.setAudioOutput(" + JsonSerializer.Serialize(preferences.OutputDevice) + ");window.turntablerNative?.listAudioOutputs()");
                 if (!YouTubeAddress.IsYouTubePage(core.Source)) Notice("설정의 ‘유튜브 페이지 보기’에서 로그인 또는 동의를 진행하세요.");
             };
             core.ProcessFailed += (_, e) => { playing = false; Notice("재생 프로세스가 종료되었습니다. 링크를 다시 실행해 주세요."); };
             var bridge = BundledAssets.ReadText("YouTubeBridge.js");
-            await core.AddScriptToExecuteOnDocumentCreatedAsync("window.__turntablerInitialVolume=" + Volume.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "; window.__turntablerInitialCaptions=" + (preferences.Captions ? "true" : "false") + ";\n" + bridge);
+            await core.AddScriptToExecuteOnDocumentCreatedAsync("window.__turntablerInitialVolume=" + Volume.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "; window.__turntablerInitialCaptions=" + (preferences.Captions ? "true" : "false") + ";window.__turntablerInitialOutputDevice=" + JsonSerializer.Serialize(preferences.OutputDevice) + ";\n" + bridge);
             browserReady = true; browserInitialized.TrySetResult();
+            UpdateObsOutput();
         }
         catch (Exception error) { Notice("영상 엔진을 시작하지 못했습니다: " + error.Message); browserInitialized.TrySetException(error); }
     }
@@ -166,6 +187,9 @@ public partial class WidgetWindow : Window
             using var doc = JsonDocument.Parse(e.WebMessageAsJson);
             var state = doc.RootElement;
             string type = state.GetProperty("type").GetString() ?? "";
+            if (type == "skip-input") { _ = SkipAdWithInput(); return; }
+            if (type == "diagnostic" || type == "bridge-error") { LogPlayback(type, state.ToString()); return; }
+            if (type.StartsWith("audio-", StringComparison.Ordinal)) { ReceiveAudioState(state); return; }
             if (type == "notice") { Notice(state.GetProperty("message").GetString() ?? ""); return; }
             if (type != "state") return;
             lastState = state.Clone();
@@ -318,7 +342,7 @@ public partial class WidgetWindow : Window
     }
     private async Task ReflectVideo()
     {
-        if (!playing || !preferences.Ambient || sampling || !browserReady || !IsVisible || closing || pageWindow != null) return;
+        if (!playing || !preferences.Ambient || sampling || !browserReady || !IsVisible || closing || pageOpen) return;
         sampling = true;
         try
         {
@@ -337,7 +361,13 @@ public partial class WidgetWindow : Window
         finally { sampling = false; }
     }
     private void ApplyOptions() { Topmost = preferences.Pin; if (settingsWindow != null) settingsWindow.Topmost = preferences.Pin; Film.Visibility = preferences.Effect ? Visibility.Visible : Visibility.Collapsed; Ambient.Visibility = preferences.Ambient ? Visibility.Visible : Visibility.Collapsed; Ambient.Opacity = preferences.LightStrength / 100; }
-    private void SetSize() { double scale = new[] { .8, 1, 1.2 }[preferences.Size]; Width = 460 * scale; Height = 390 * scale; WidgetScale.Width = Width; WidgetScale.Height = Height; }
+    private void SetSize()
+    {
+        double scale = new[] { .8, 1, 1.2 }[preferences.Size];
+        WidgetScale.Width = 460 * scale; WidgetScale.Height = 390 * scale;
+        if (pageOpen) widgetBounds = new Rect(widgetBounds.Left, widgetBounds.Top, WidgetScale.Width, WidgetScale.Height);
+        else { Width = WidgetScale.Width; Height = WidgetScale.Height; }
+    }
     private Rect WorkArea()
     {
         var display = Forms.Screen.FromHandle(new WindowInteropHelper(this).Handle).WorkingArea;
@@ -356,7 +386,7 @@ public partial class WidgetWindow : Window
     }
     private void HideWidget(object sender, RoutedEventArgs e) { settingsWindow?.Close(); Hide(); }
     private void ShowWidget() { Show(); WindowState = WindowState.Normal; Activate(); }
-    private void CloseWidget(object sender, RoutedEventArgs e) => Close();
+    private void CloseWidget(object sender, RoutedEventArgs e) { closing = true; Close(); }
     private void Save()
     {
         if (!initialized) return;
@@ -366,23 +396,59 @@ public partial class WidgetWindow : Window
     }
     private async void OpenYouTubePage(object sender, RoutedEventArgs e)
     {
-        if (pageWindow != null) { pageWindow.Activate(); return; }
-        if (!browserReady || string.IsNullOrEmpty(Browser.CoreWebView2.Source) || Browser.CoreWebView2.Source == "about:blank") { Notice("먼저 유튜브 링크를 입력해 주세요."); return; }
-        settingsWindow?.Close();
-        await Execute("window.turntablerNative?.setWidgetMode(false)");
-        VideoViewbox.Child = null;
-        Browser.Width = double.NaN; Browser.Height = double.NaN;
-        pageWindow = new Window { Title = "YouTube · TurnTabler", Width = 1100, Height = 760, Content = Browser, WindowStartupLocation = WindowStartupLocation.CenterScreen, Background = Brushes.Black };
-        if (Program.Smoke) { pageWindow.WindowStartupLocation = WindowStartupLocation.Manual; pageWindow.Left = -10000; pageWindow.Top = -10000; pageWindow.ShowInTaskbar = false; }
-        pageWindow.Closed += async (_, _) =>
+        if (e.RoutedEvent != null) e.Handled = true;
+        if (pageOpen) { ShowWidget(); return; }
+        if (openingPage || closing) return;
+        openingPage = true;
+        try
         {
-            pageWindow.Content = null; pageWindow = null;
+            await browserInitialized.Task;
             if (closing) return;
-            Browser.Width = 960; Browser.Height = 540; VideoViewbox.Child = Browser;
-            await Execute("window.turntablerNative?.setWidgetMode(true)");
-        };
-        pageWindow.Show();
+            settingsWindow?.Close(); PlaylistPanel.Visibility = Visibility.Collapsed;
+            widgetBounds = new Rect(Left, Top, Width, Height);
+            // Keep the original HWND. WebView2CompositionControl does not reparent
+            // its native input controller when moved to a different WPF Window.
+            pageOpen = true;
+            VideoViewbox.Child = null;
+            Browser.Width = double.NaN; Browser.Height = double.NaN;
+            Browser.IsHitTestVisible = true;
+            BrowserContent.Content = Browser;
+            WidgetScale.Visibility = Visibility.Collapsed;
+            BrowserPanel.Visibility = Visibility.Visible;
+            var area = WorkArea();
+            Width = Math.Min(1100, area.Width - 24); Height = Math.Min(760, area.Height - 24);
+            if (!Program.Smoke) { Left = area.Left + (area.Width - Width) / 2; Top = area.Top + (area.Height - Height) / 2; }
+            ResizeMode = ResizeMode.CanResizeWithGrip; ShowInTaskbar = true;
+            UpdateLayout();
+            await Execute("window.turntablerNative?.setWidgetMode(false)");
+            if (string.IsNullOrEmpty(Browser.CoreWebView2.Source) || Browser.CoreWebView2.Source == "about:blank")
+                Browser.CoreWebView2.Navigate("https://www.youtube.com/");
+            Browser.Focus();
+        }
+        catch (Exception error) { Notice("유튜브 브라우저를 열지 못했습니다: " + error.Message); }
+        finally
+        {
+            openingPage = false;
+            if (closePageRequested) { closePageRequested = false; CloseYouTubePage(this, new RoutedEventArgs()); }
+        }
     }
+    private async void CloseYouTubePage(object sender, RoutedEventArgs e)
+    {
+        if (e.RoutedEvent != null) e.Handled = true;
+        if (!pageOpen) return;
+        if (openingPage) { closePageRequested = true; return; }
+        pageOpen = false;
+        BrowserContent.Content = null;
+        Browser.Width = 960; Browser.Height = 540; VideoViewbox.Child = Browser;
+        BrowserPanel.Visibility = Visibility.Collapsed; WidgetScale.Visibility = Visibility.Visible;
+        ResizeMode = ResizeMode.NoResize; ShowInTaskbar = false;
+        Left = widgetBounds.Left; Top = widgetBounds.Top; Width = widgetBounds.Width; Height = widgetBounds.Height;
+        UpdateLayout();
+        if (!closing)
+            await Execute("window.turntablerNative?.setWidgetMode(true)");
+    }
+    private void OpenYouTubeHome(object sender, RoutedEventArgs e) { e.Handled = true; if (browserReady) Browser.CoreWebView2.Navigate("https://www.youtube.com/"); }
+    private void DragBrowserHeader(object sender, MouseButtonEventArgs e) { if (!e.Handled && e.ChangedButton == MouseButton.Left && e.OriginalSource is not Button) { try { DragMove(); } catch (InvalidOperationException) { } } }
 
     private void Capture(string name)
     {
@@ -511,10 +577,10 @@ public partial class WidgetWindow : Window
             if (angle != RecordRotation.Angle) throw new Exception("회전 설정 끄기 실패");
             preferences.Rotation = true;
             OpenYouTubePage(this, new RoutedEventArgs());
-            await Until(() => pageWindow != null, "원래 유튜브 페이지 보기");
+            await Until(() => pageOpen && !openingPage, "원래 유튜브 페이지 보기");
             await Task.Delay(600);
-            pageWindow!.Close();
-            await Until(() => pageWindow == null && VideoViewbox.Child == Browser, "위젯으로 돌아오기");
+            CloseYouTubePage(this, new RoutedEventArgs());
+            await Until(() => !pageOpen && VideoViewbox.Child == Browser, "위젯으로 돌아오기");
             await Execute("window.turntablerNative.play()"); await Until(() => playing, "페이지 복귀 후 재생");
             if (AllowsTransparency != true || WindowStyle != WindowStyle.None || ShowInTaskbar != false) throw new Exception("네이티브 위젯 창 속성 실패");
             if (Math.Abs(VideoViewbox.Opacity - .58) > .001) throw new Exception("이동 후 영상 불투명도가 유지되지 않음");

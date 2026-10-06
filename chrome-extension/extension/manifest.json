@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TurnTabler로 재생",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "유튜브에서 우클릭해 TurnTabler로 재생합니다. 앱이 꺼져 있으면 함께 실행합니다.",
   "minimum_chrome_version": "123",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1sCiKqgV1/f2v1VsKfiUPmn/YGvxy8MRNpkjjhTkWT9tJMIC84QhkABKvZZep3uva3ARghEkwKdyn79oYUJaGa8sC7SZ5/p7Sg7iK96AkPG4lSAphv4uQh4QgmaIz0bWZraSGCyw/nOiWS8E6+gD4pFYOLCnHNjohlOnfZTaM2yNKTcno+zw3xM0bk5IucKXC8Sz1BIWz3XKEsRXImnxsXIlyj2ENQk2C+68RTlpjCjHCkfexLvRBlhw29IxQ8qf/DinWii8P+h0DXRiGdZkg8FY82o3aDVedul2tUQoehKOrI6oTRmSIgEJU4rRU8gWO9xX+iPZHC+q2cJLf1bv3wIDAQAB",

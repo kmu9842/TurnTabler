@@ -4,7 +4,7 @@ const version = document.querySelector('#version');
 const buttons = [...document.querySelectorAll('button')];
 async function request(action, extra = {}) {
   buttons.forEach(button => { button.disabled = true; });
-  status.textContent = action === 'choosePath' ? '파일 선택 창에서 TurnTabler.exe를 선택하세요.' : '앱 경로를 확인하는 중…';
+  status.textContent = action === 'choosePath' ? '선택 창에서 TurnTabler 앱을 선택하세요.' : '앱 경로를 확인하는 중…';
   delete status.dataset.ok;
   try {
     const reply = await chrome.runtime.sendNativeMessage('com.turntabler.player', { action, ...extra });
@@ -14,7 +14,7 @@ async function request(action, extra = {}) {
     field.value = reply.appPath;
     status.dataset.ok = String(reply.available);
     status.textContent = reply.available
-      ? (action === 'getSettings' ? '앱이 연결되었습니다.' : '경로를 저장했습니다. 다음 재생부터 이 EXE를 사용합니다.')
+      ? (action === 'getSettings' ? '앱이 연결되었습니다.' : '경로를 저장했습니다. 다음 재생부터 이 앱을 사용합니다.')
       : reply.error;
     version.textContent = reply.available ? `확인된 앱 버전: ${reply.appVersion}` : '';
   } catch (error) {
