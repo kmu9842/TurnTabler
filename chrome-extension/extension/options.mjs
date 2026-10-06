@@ -10,7 +10,7 @@ async function request(action, extra = {}) {
     const reply = await chrome.runtime.sendNativeMessage('com.turntabler.player', { action, ...extra });
     if (!reply?.ok) throw new Error(reply?.error || '경로를 확인하지 못했습니다.');
     if (reply.cancelled) { status.textContent = '파일 선택을 취소했습니다. 기존 경로를 유지합니다.'; return; }
-    if (reply.protocol !== 1 || typeof reply.appPath !== 'string') throw new Error('새 ZIP의 Install.cmd를 실행해 연결 프로그램을 업데이트해 주세요.');
+    if (reply.protocol !== 1 || typeof reply.appPath !== 'string') throw new Error('새 ZIP의 설치 스크립트(Windows: Install.cmd, Mac: Install-Chrome.command)를 실행해 연결 프로그램을 업데이트해 주세요.');
     field.value = reply.appPath;
     status.dataset.ok = String(reply.available);
     status.textContent = reply.available
@@ -20,7 +20,7 @@ async function request(action, extra = {}) {
   } catch (error) {
     status.dataset.ok = 'false';
     status.textContent = /native messaging host|host not found|communicat/i.test(error.message)
-      ? '연결 프로그램을 찾을 수 없습니다. 새 ZIP의 Install.cmd를 실행해 주세요.' : error.message;
+      ? '연결 프로그램을 찾을 수 없습니다. Windows는 Install.cmd, Mac은 Install-Chrome.command를 실행해 주세요.' : error.message;
   } finally { buttons.forEach(button => { button.disabled = false; }); }
 }
 document.querySelector('#path-form').addEventListener('submit', event => { event.preventDefault(); void request('setPath', { appPath: field.value }); });

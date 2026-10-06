@@ -20,7 +20,7 @@ async function check() {
       : '앱이 연결되었습니다. 유튜브에서 우클릭해 재생해 보세요.';
   } catch {
     status.dataset.ok = 'false';
-    status.textContent = '앱 연결이 필요합니다. 설치 ZIP의 Install.cmd를 실행하고 최신 TurnTabler.exe를 선택해 주세요.';
+    status.textContent = '앱 연결이 필요합니다. 설치 ZIP에서 Windows는 Install.cmd, Mac은 Install-Chrome.command를 실행해 주세요.';
   } finally { button.disabled = false; }
 }
 button.addEventListener('click', check);

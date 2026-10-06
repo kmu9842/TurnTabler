@@ -45,6 +45,12 @@ jobs:
           name: Shared-artwork
           path: artifacts/mac-artwork
       - run: bash macos/build.sh
+      - name: Chrome host install, reinstall and messaging
+        run: |
+          bash macos/Install-Chrome.command "$PWD/release/macos/TurnTabler.app"
+          bash macos/Install-Chrome.command "$PWD/release/macos/TurnTabler.app"
+          python3 macos/test-host.py "$PWD/release/macos/TurnTabler.app"
+          bash macos/Uninstall-Chrome.command
       - name: WebKit smoke test
         run: |
           mkdir -p artifacts/mac-smoke

@@ -1,24 +1,34 @@
 # TurnTabler
 
-투명한 Windows 네이티브 턴테이블 위젯입니다. 창과 레코드 회전, 설정, 볼륨 조작은 C# WPF로 구현하며 영상은 Windows WebView2에서 유튜브의 원래 재생 페이지를 엽니다. Electron과 Node.js는 실행에 필요하지 않습니다.
+투명한 네이티브 턴테이블 위젯입니다. Windows 버전은 C# WPF·WebView2, Mac 미리보기 버전은 Swift AppKit·WebKit으로 유튜브의 원래 재생 페이지를 엽니다. Electron과 Node.js는 실행에 필요하지 않습니다.
 
 ## 실행
 
 [1.1.0 배포](https://github.com/kmu9842/TurnTabler/releases/tag/v1.1.0)에서 **TurnTabler.exe**를 내려받아 실행하세요. 이미지와 재생 스크립트, .NET 런타임은 EXE에 포함됩니다.
 
-배포 첨부 파일은 다음 세 개입니다.
+배포 첨부 파일은 다음과 같습니다.
 
 - `TurnTabler.exe` — Windows 실행 파일
-- `TurnTabler-guide-ko.png` — 실제 프로그램 캡처로 만든 한 장 사용 가이드
-- `TurnTabler-Chrome-1.0.0.zip` — 선택 설치하는 Chrome 확장 프로그램
+- `TurnTabler-Chrome-1.1.0.zip` — Windows에서 선택 설치하는 Chrome 확장 프로그램
+- `TurnTabler-macOS-1.1.0-universal.zip` — Mac 미리보기 앱과 Chrome 연결 도구
 
 ![TurnTabler 사용 가이드](output/TurnTabler-guide-ko.png)
+
+위 가이드 이미지는 1.0.0 기준입니다. 1.1.0의 브라우저·출력 장치·OBS 기능은 아래 안내를 참고하세요.
 
 Windows 10 2004 이상 / Windows 11의 x64 환경을 지원합니다. 영상은 Windows의 Microsoft Edge WebView2 Runtime을 사용합니다. WebView2가 없는 PC에는 [Microsoft 공식 런타임](https://developer.microsoft.com/microsoft-edge/webview2/)을 설치해야 합니다. 별도의 .NET 설치는 필요하지 않습니다.
 
 소스에서 개발용으로 실행하려면 `Start-TurnTabler.cmd` 또는 `npm.cmd start`를 사용합니다.
 
-## 사용
+## Mac 미리보기 버전
+
+macOS 15.4 이상에서 Apple Silicon과 Intel을 지원합니다. ZIP을 풀어 `TurnTabler.app`을 Applications에 옮깁니다. Apple Developer ID 서명·공증이 없는 미리보기 배포본이므로 최초 실행 시 macOS의 개인정보 보호 및 보안 설정에서 실행 허용이 필요할 수 있습니다.
+
+재생·재생목록·광고 스킵 버튼 자동 클릭·자막·브라우저·로그인 저장·출력 스피커 선택·Chrome 링크 전달을 제공합니다. Mac WebKit에서 출력 장치 목록을 가져오려면 사용자가 설정의 **출력 장치 목록 허용**을 눌러 마이크 권한을 허용해야 합니다. 마이크 트랙은 즉시 해제하며 녹음하지 않습니다. Chrome 연결은 패키지의 `Install-Chrome.command`로 등록합니다.
+
+Windows용 OBS 직접 스트림과 일부 시각 효과 설정은 Mac 미리보기에 포함하지 않았습니다. Mac 빌드 서버에서 Universal 빌드, 주소 검증, WebKit 화면 전환과 Chrome 연결 프로그램을 검증했습니다. 실제 Mac에서 YouTube 로그인·장시간 재생·하드웨어 오디오·OBS 캡처는 아직 검증하지 못했습니다. 자세한 설치 안내는 [Mac 안내](macos/README-Mac.txt)를 참고하세요.
+
+## Windows 사용
 
 - 아래 입력칸에 유튜브 영상 또는 재생목록 링크를 붙여 넣고 Enter를 누릅니다. `RD…` 믹스 링크도 선택한 영상과 목록을 함께 유지합니다.
 - 영상은 수평을 유지하며 레코드판 전체에 투사됩니다. 홈과 표면 무늬는 24초에 한 바퀴씩 천천히 회전하고, 부드러운 조명 반사는 고정됩니다. 일시정지하면 판이 멈춥니다.
@@ -60,7 +70,7 @@ OBS의 오디오 모니터링은 ‘모니터링 끄기’로 둡니다. 앱 자
 
 앱이 꺼져 있으면 자동 실행하며, 실행 중이면 같은 위젯에서 곡을 바꾸고 숨겨진 위젯을 다시 표시합니다. 재생목록·믹스와 링크의 시작 시간을 유지합니다. 브라우저에서 이미 재생하던 영상은 필요하면 직접 일시정지하세요. 툴바 아이콘을 누르면 앱 연결 상태를 확인할 수 있습니다.
 
-EXE 위치를 옮겼다면 확장 아이콘의 **설정 · EXE 경로 변경**에서 파일을 선택하거나 경로를 입력해 저장합니다. 현재 경로와 실제 파일 버전이 표시되며, 기존 EXE가 없어도 다시 지정할 수 있습니다. 설치기는 앱 실행 없이 파일 정보와 최소 버전을 확인합니다. 제거할 때는 `Uninstall.cmd` 실행 후 Chrome에서 확장을 제거합니다. 앱과 기존 설정은 유지됩니다. 웹 스토어에 게시하지 않은 로컬 설치용 확장이며, 자세한 안내는 [확장 설치 안내](chrome-extension/README.txt)에 있습니다.
+EXE 위치를 옮겼다면 확장 아이콘의 **설정 · 앱 경로 변경**에서 파일을 선택하거나 경로를 입력해 저장합니다. 현재 경로와 실제 파일 버전이 표시되며, 기존 EXE가 없어도 다시 지정할 수 있습니다. 설치기는 앱 실행 없이 파일 정보와 최소 버전을 확인합니다. 제거할 때는 `Uninstall.cmd` 실행 후 Chrome에서 확장을 제거합니다. 앱과 기존 설정은 유지됩니다. 웹 스토어에 게시하지 않은 로컬 설치용 확장이며, 자세한 안내는 [확장 설치 안내](chrome-extension/README.txt)에 있습니다.
 
 확장 업데이트 후에는 `chrome://extensions`에서 확장의 **새로고침**을 누르고 **유튜브 탭도 새로고침**하세요. 자체 메뉴 항목은 유튜브 사이트에만 적용되는 콘텐츠 스크립트로 추가합니다. 유튜브의 메뉴 구조가 바뀌면 확장 업데이트가 필요할 수 있으며, Chrome 기본 메뉴에서도 계속 재생할 수 있습니다.
 
@@ -83,7 +93,9 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/test-released-ap
 
 `build.ps1`은 개발용 파일을 `release/native`에 만들고, `publish.ps1`은 배포용 단일 EXE를 `release/single-file/TurnTabler.exe`에 만듭니다. 배포용 EXE를 실행하는 데 DLL·이미지·스크립트 파일을 함께 전달할 필요가 없습니다. 실행 시 내장 네이티브 라이브러리는 .NET의 임시 캐시에 풀립니다.
 
-`scripts/package-chrome.ps1 -Test`는 확장을 검사하고 연결 프로그램을 빌드하여 앱 EXE와 별도인 `release/TurnTabler-Chrome-1.0.0.zip`을 만듭니다. 연결 프로그램 빌드는 Windows .NET Framework 4.x C# 컴파일러를 사용합니다. `scripts/test-browser-integration.mjs`는 연결 기능이 추가된 앱 빌드의 Native Messaging과 두 영상의 실제 재생을 별도 프로필에서 확인합니다.
+`scripts/package-chrome.ps1 -Test`는 확장을 검사하고 연결 프로그램을 빌드하여 앱 EXE와 별도인 `release/TurnTabler-Chrome-1.1.0.zip`을 만듭니다. 연결 프로그램 빌드는 Windows .NET Framework 4.x C# 컴파일러를 사용합니다. `scripts/test-browser-integration.mjs`는 연결 기능이 추가된 앱 빌드의 Native Messaging과 두 영상의 실제 재생을 별도 프로필에서 확인합니다.
+
+Mac 빌드는 macOS와 Xcode Command Line Tools에서 `bash macos/build.sh`로 실행합니다. 먼저 Windows EXE의 `--export-artwork artifacts/mac-artwork`로 기존 렌더링 리소스를 내보내야 합니다. `.github/workflows/build-desktop.yml`은 Windows 검증·리소스 내보내기 후 Mac Universal 빌드·WebKit 검증·Chrome 연결 프로그램 검증을 수행하고 양쪽 배포 파일을 보관합니다.
 
 `scripts/test-chrome.ps1`은 설치 패키지를 임시 폴더에 설치한 뒤 독립된 Chrome 프로필에 확장을 로드해 실제 유튜브 자체 메뉴 표시·재열기·재생성, 메뉴 클릭으로 앱 자동 실행·재생·창 재사용, 설정의 경로 변경·버전 표시·오류 처리·저장 유지, 연결 팝업과 제거를 검증합니다. 테스트가 끝나면 기존 Chrome 연결 등록을 복원합니다. 결과와 스크린샷은 `artifacts/chrome/`에 저장됩니다.
 

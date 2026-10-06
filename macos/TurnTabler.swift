@@ -220,6 +220,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
     }
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.frameInfo.isMainFrame, message.frameInfo.securityOrigin.host == "www.youtube.com", let state = message.body as? [String:Any], let type = state["type"] as? String else { return }
+        if type == "skip-input" { skipWithInput(); return }
         if type == "state" {
             playing = state["playing"] as? Bool == true; playButton.title = playing ? "Ⅱ" : "▶"; nextButton.isEnabled = state["hasNext"] as? Bool == true
             tracks = state["tracks"] as? [[String:Any]] ?? []; captionsButton.contentTintColor = prefs.bool(forKey:"captions") ? .white : .lightGray
@@ -232,6 +233,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
             for device in devices { guard let id = device["id"], !id.isEmpty, id != "default", id != "communications", !deviceIds.contains(id) else { continue }; deviceIds.append(id); outputs?.addItem(withTitle:device["name"] ?? "오디오 출력 장치") }
             if let index = deviceIds.firstIndex(of:prefs.string(forKey:"output") ?? "") { outputs?.selectItem(at:index) }
         } else if type == "audio-output", state["ok"] as? Bool == true { prefs.set(state["deviceId"] as? String ?? "",forKey:"output"); outputStatus?.stringValue = state["fallback"] as? Bool == true ? "연결이 끊겨 기본 장치로 전환했습니다." : "TurnTabler 소리에만 적용됩니다." }
+    }
+    func skipWithInput() {
+        web.evaluateJavaScript("window.turntablerNative?.skipTarget()") { value, _ in
+            guard let target = value as? [String:Double], let x = target["x"], let y = target["y"], x.isFinite, y.isFinite, x >= 0, y >= 0, x < self.web.bounds.width, y < self.web.bounds.height else { return }
+            let point = self.web.convert(NSPoint(x:x,y:self.web.isFlipped ? y : self.web.bounds.height-y),to:nil)
+            for kind in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+                if let event = NSEvent.mouseEvent(with:kind,location:point,modifierFlags:[],timestamp:ProcessInfo.processInfo.systemUptime,windowNumber:self.window.windowNumber,context:nil,eventNumber:0,clickCount:1,pressure:1) {
+                    if kind == .leftMouseDown { self.web.mouseDown(with:event) } else { self.web.mouseUp(with:event) }
+                }
+            }
+        }
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         script("window.turntablerNative?.setWidgetMode(\(!pageOpen));window.turntablerNative?.setVolume(\(smoke ? 0 : volume.doubleValue));window.turntablerNative?.setCaptions(\(prefs.bool(forKey:"captions")));window.turntablerNative?.setAudioOutput(\(jsonString(prefs.string(forKey:"output") ?? "")))")
@@ -259,9 +271,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKNa
         DispatchQueue.main.asyncAfter(deadline:.now()+3) {
             self.openBrowser()
             self.web.evaluateJavaScript("document.querySelector('#probe').click(); document.querySelector('#typing').value='abc'; window.clicked && document.querySelector('#typing').value==='abc'") { value,error in
-                let success = error == nil && value as? Bool == true
+                let documentWorked = error == nil && value as? Bool == true
                 self.closeBrowser(); self.openBrowser(); self.closeBrowser()
-                let data: [String:Any] = ["success":success,"webkitDocument":success,"browserRoundTrip":!self.pageOpen && self.web.superview === self.viewport,"persistentStoreConfigured":true,"hardwareAudioAndYouTubeLoginTested":false]
+                let roundTrip = !self.pageOpen && self.web.superview === self.viewport
+                let success = documentWorked && roundTrip
+                let data: [String:Any] = ["success":success,"webkitDocument":documentWorked,"browserRoundTrip":roundTrip,"usesIsolatedTestProfile":true,"hardwareAudioAndYouTubeLoginTested":false]
                 let output = ProcessInfo.processInfo.environment["TURNTABLER_ARTIFACTS"] ?? NSTemporaryDirectory()
                 try? FileManager.default.createDirectory(atPath:output,withIntermediateDirectories:true)
                 try? JSONSerialization.data(withJSONObject:data,options:.prettyPrinted).write(to:URL(fileURLWithPath:output).appendingPathComponent("mac-smoke.json"))
