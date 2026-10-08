@@ -8,11 +8,11 @@
 
 [1.1.0 배포](https://github.com/kmu9842/TurnTabler/releases/tag/v1.1.0)에서 **TurnTabler.exe**를 내려받아 실행하세요. 이미지와 재생 스크립트, .NET 런타임은 EXE에 포함됩니다.
 
-배포 첨부 파일은 다음과 같습니다.
+다운로드 파일은 다음과 같습니다.
 
 - `TurnTabler.exe` — Windows 실행 파일
 - `TurnTabler-Chrome-1.1.0.zip` — Windows에서 선택 설치하는 Chrome 확장 프로그램
-- `TurnTabler-macOS-1.1.0-universal.zip` — Mac 미리보기 앱과 Chrome 연결 도구
+- [TurnTabler-macOS-1.1.1-universal.zip](https://github.com/kmu9842/TurnTabler/releases/download/v1.1.1-macos/TurnTabler-macOS-1.1.1-universal.zip) — Mac 미리보기 앱과 Chrome 연결 도구
 - `TurnTabler-guide-ko.png` — 1.1.0 변경점과 사용법 이미지
 - `TurnTabler-OBS-guide-ko.png` — OBS 직접 오디오 연결 가이드 이미지
 
@@ -26,11 +26,15 @@ Windows 10 2004 이상 / Windows 11의 x64 환경을 지원합니다. 영상은 
 
 ## Mac 미리보기 버전
 
+[Mac 1.1.1 배포](https://github.com/kmu9842/TurnTabler/releases/tag/v1.1.1-macos)는 맥 전용 수정본입니다. Windows 앱과 Chrome 확장은 기존 1.1.0을 사용합니다.
+
 macOS 15.4 이상에서 Apple Silicon과 Intel을 지원합니다. ZIP을 풀어 `TurnTabler.app`을 Applications에 옮깁니다. Apple Developer ID 서명·공증이 없는 미리보기 배포본이므로 최초 실행 시 macOS의 개인정보 보호 및 보안 설정에서 실행 허용이 필요할 수 있습니다.
 
-재생·재생목록·광고 스킵 버튼 자동 클릭·자막·브라우저·로그인 저장·출력 스피커 선택·Chrome 링크 전달을 제공합니다. Mac WebKit에서 출력 장치 목록을 가져오려면 사용자가 설정의 **출력 장치 목록 허용**을 눌러 마이크 권한을 허용해야 합니다. 마이크 트랙은 즉시 해제하며 녹음하지 않습니다. Chrome 연결은 패키지의 `Install-Chrome.command`로 등록합니다.
+재생·재생목록·이전 곡 기록·광고 스킵 버튼 자동 클릭·자막·브라우저·로그인 저장·출력 스피커 선택·Chrome 링크 전달을 제공합니다. Windows와 같은 960×540 영상 배율과 원형 마스크, 유리 조작부, CC 밑줄, 재생 중 조작부 10% 불투명도를 적용합니다. 설정에서 영상 불투명도, 항상 위 표시, 회전, 프로젝터 효과, 영상 색 반사, 빛 퍼짐, 크기 3단계와 숨기기를 조정할 수 있습니다. Mac WebKit에서 출력 장치 목록을 가져오려면 사용자가 설정의 **출력 장치 목록 허용**을 눌러 마이크 권한을 허용해야 합니다. 마이크 트랙은 즉시 해제하며 녹음하지 않습니다. Chrome 연결은 패키지의 `Install-Chrome.command`로 등록합니다.
 
-Windows용 OBS 직접 스트림과 일부 시각 효과 설정은 Mac 미리보기에 포함하지 않았습니다. Mac 빌드 서버에서 Universal 빌드, 주소 검증, WebKit 화면 전환과 Chrome 연결 프로그램을 검증했습니다. 실제 Mac에서 YouTube 로그인·장시간 재생·하드웨어 오디오·OBS 캡처는 아직 검증하지 못했습니다. 자세한 설치 안내는 [Mac 안내](macos/README-Mac.txt)를 참고하세요.
+Windows용 OBS 직접 스트림은 Mac 미리보기에 포함하지 않았습니다. 이번 Mac 수정본은 Apple Silicon·Intel Universal 빌드를 확인했으며, 실행 테스트는 수행하지 않았습니다. 실제 Mac에서 YouTube 로그인·장시간 재생·하드웨어 오디오·OBS 캡처는 아직 검증하지 못했습니다. 자세한 설치 안내는 [Mac 안내](macos/README-Mac.txt)를 참고하세요.
+
+소스에서는 `bash macos/build.sh`로 `release/macos/TurnTabler.app`과 Universal ZIP을 만듭니다. Windows와 동일한 원본 이미지에서 Mac 빌드 중 레이어를 생성하므로 별도의 이미지 추출 파일이 필요하지 않습니다. 맥 전용 재생 스크립트는 `macos/YouTubeBridge.js`이며 Windows의 재생 스크립트와 분리되어 있습니다. 빌드만 실행하며, URL 자체 검사를 함께 실행하려면 `RUN_SELF_TESTS=1 bash macos/build.sh`를 명시합니다.
 
 ## Windows 사용
 
